@@ -1094,9 +1094,19 @@
                 const ageHours = ageMs / (1000 * 60 * 60);
                 if (ageHours > 4) {
                     const ageText = ageHours < 24 ? Math.round(ageHours) + ' hours' : Math.round(ageHours / 24) + ' days';
+                    const staleQuotes = [
+                        `This sensor data is ${ageText} old. It's like finding a parking spot in 1994.`,
+                        `${ageText} old? The sea was angrier than this sensor.`,
+                        `Data from ${ageText} ago. Even the rubber band ball has moved on.`,
+                        `${ageText} stale. George would've given up by now.`,
+                        `This sensor hasn't updated in ${ageText}. Serenity now!`,
+                        `${ageText} old data. It's not a lie if you believe it... but it is old.`,
+                        `Sensor checked in ${ageText} ago. These pretzels are making me thirsty for fresh data.`
+                    ];
+                    const quote = staleQuotes[Math.floor(Math.random() * staleQuotes.length)];
                     staleWarningHtml = `<div class="flex items-center space-x-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs font-medium mb-4">
                         <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
-                        <span>Sensor data is ${ageText} old — may not reflect current status.</span>
+                        <span>${quote}</span>
                     </div>`;
                 }
             }
