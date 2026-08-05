@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Melbourne Live Parking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+        #map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; background: #f8fafc; }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        input, select, textarea { font-size: 16px; } /* Prevent iOS auto-zoom */
+
+        /* Map Bay Labels */
+        .bay-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 800;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.9);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            white-space: nowrap;
+            padding: 2px 5px;
+            letter-spacing: -0.5px;
+            pointer-events: none;
+            transform: translateY(-2px);
+        }
+        
+        #loading-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(248, 250, 252, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.3s;
+        }
+        .spinner {
+            width: 48px; height: 48px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        /* Bottom Sheet Mechanics */
+        #bottom-sheet {
+            position: absolute; bottom: 0; left: 0; right: 0; z-index: 1000;
+            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+            border-radius: 24px 24px 0 0;
+            max-height: 85vh;
+            display: flex; flex-direction: column;
+        }
+        #bottom-sheet.collapsed { transform: translateY(calc(100% - 110px)); }
+        #bottom-sheet.expanded { transform: translateY(0); }
+        
+        .sheet-content { 
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch; 
+            padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+        }
+
+        .filter-btn.active {
+            background-color: #1f2937 !important;
+            color: white !important;
+        }
+
+        .active-marker-pulse {
+            width: 24px;
+            height: 24px;
+            background: rgba(59, 130, 246, 0.4);
+            border-radius: 50%;
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            animation: pulse 1.5s infinite;
+            z-index: -1;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+
+        .view-transition {
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div id="loading-overlay">
+        <div class="text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <div id="loading-text" class="text-sm font-semibold text-gray-600">Initializing...</div>
+        </div>
+    </div>
+
+    <!-- Top Floating Search -->
+    <div class="absolute top-0 left-0 right-0 z-[1001] p-4 pt-[calc(1rem+env(safe-area-inset-top))] pointer-events-none">
+        <div class="max-w-md mx-auto flex space-x-2 pointer-events-auto">
+            <div class="relative flex-1">
+                <input id="search-input" type="text" placeholder="Search address in Melbourne..." class="w-full px-5 py-3 rounded-full glass border-none focus:ring-2 focus:ring-blue-500 outline-none text-sm shadow-sm">
+                <div id="search-results" class="absolute mt-2 w-full bg-white rounded-2xl shadow-xl border border-gray-100 hidden max-h-60 overflow-y-auto"></div>
+            </div>
+            <button id="btn-locate" class="w-12 h-12 flex items-center justify-center rounded-full glass text-gray-700 active:scale-95 transition shadow-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Bottom Sheet -->
+    <div id="bottom-sheet" class="collapsed glass">
+        <div id="sheet-handle" class="pt-3 pb-2 cursor-pointer flex justify-center flex-shrink-0">
+            <div class="w-10 h-1.5 bg-gray-300 rounded-full"></div>
+        </div>
+        
+        <!-- View 1: Overview -->
+        <div id="view-overview" class="sheet-content px-5">
+            <div class="flex items-center justify-between mb-3 mt-1">
+                <h1 class="text-lg font-bold text-gray-800 tracking-tight">Melbourne Parking</h1>
+                <div id="status-text" class="text-xs text-gray-500 font-medium"></div>
+            </div>
+            
+            <div class="flex space-x-2 mb-3">
+                <button data-filter="all" class="filter-btn active flex-1 py-2.5 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 active:scale-95 transition">All</button>
+                <button data-filter="free" class="filter-btn flex-1 py-2.5 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 active:scale-95 transition">Free</button>
+                <button data-filter="occupied" class="filter-btn flex-1 py-2.5 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 active:scale-95 transition">Taken</button>
+            </div>
+
+            <div class="grid grid-cols-4 gap-2 text-center mb-4">
+                <div class="bg-gray-50 rounded-xl p-2 border border-gray-100">
+                    <div id="stat-total" class="text-xl font-bold text-gray-800">0</div>
+                    <div class="text-[10px] text-gray-500 uppercase tracking-wider">Total</div>
+                </div>
+                <div class="bg-green-50 rounded-xl p-2 border border-green-100">
+                    <div id="stat-free" class="text-xl font-bold text-green-600">0</div>
+                    <div class="text-[10px] text-green-500 uppercase tracking-wider">Free</div>
+                </div>
+                <div class="bg-red-50 rounded-xl p-2 border border-red-100">
+                    <div id="stat-occupied" class="text-xl font-bold text-red-600">0</div>
+                    <div class="text-[10px] text-red-500 uppercase tracking-wider">Taken</div>
+                </div>
+                <div class="bg-blue-50 rounded-xl p-2 border border-blue-100">
+                    <div id="stat-near" class="text-xl font-bold text-blue-600">0</div>
+                    <div class="text-[10px] text-blue-500 uppercase tracking-wider">Near</div>
+                </div>
+            </div>
+
+            <div class="flex space-x-2 mb-4">
+                <button id="btn-reload" class="flex-1 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold active:scale-95 transition flex items-center justify-center space-x-2 shadow-md shadow-blue-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Reload Sensors</span>
+                </button>
+                <button id="btn-clear" class="px-4 py-3 rounded-xl bg-gray-200 text-gray-700 text-sm font-semibold active:scale-95 transition">Clear</button>
+            </div>
+            
+            <div id="nearby-panel" class="pb-4 hidden">
+                <h2 class="text-sm font-bold text-gray-800 mb-2 flex items-center justify-between">
+                    <span>Nearby Parking</span>
+                    <span class="text-[10px] text-gray-500 font-normal bg-gray-100 px-2 py-1 rounded-full">600m radius</span>
+                </h2>
+                <div id="nearby-list" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- View 2: Bay Details -->
+        <div id="view-details" class="sheet-content px-5 hidden">
+            <div class="flex justify-between items-center mb-4 mt-1">
+                <button id="btn-back" class="flex items-center text-blue-600 text-sm font-semibold active:scale-95 transition">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Back
+                </button>
+                <div id="details-status-time" class="text-xs text-gray-500 font-medium"></div>
+            </div>
+            <div id="details-content" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- Utility Functions ---
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function formatDateTime(isoStr) {
+            if (!isoStr) return 'N/A';
+            try {
+                const date = new Date(isoStr);
+                return date.toLocaleString(undefined, {
+                    month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', hour12: true
+                });
+            } catch (e) { return isoStr; }
+        }
+
+        // Time logic to determine active restriction
+        function getMelbourneTimeData() {
+            const now = new Date();
+            const melbDateString = now.toLocaleString("en-US", { timeZone: "Australia/Melbourne" });
+            const melbNow = new Date(melbDateString);
+            return {
+                day: melbNow.getDay(), // 0=Sun, 1=Mon, ..., 6=Sat
+                time: melbNow.getHours() + (melbNow.getMinutes() / 60)
+            };
+        }
+
+        function parseDays(dayStr) {
+            const dayMap = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+            if (!dayStr) return [0,1,2,3,4,5,6];
+            if (dayStr === 'Mon-Sun' || dayStr === 'Everyday') return [0,1,2,3,4,5,6];
+            const parts = dayStr.split('-');
+            if (parts.length === 2) {
+                let start = dayMap[parts[0]];
+                let end = dayMap[parts[1]];
+                let days = [];
+                if (start <= end) {
+                    for (let i = start; i <= end; i++) days.push(i);
+                } else {
+                    for (let i = start; i <= 6; i++) days.push(i);
+                    for (let i = 0; i <= end; i++) days.push(i);
+                }
+                return days;
+            }
+            return [0,1,2,3,4,5,6];
+        }
+
+        function parseTime(timeStr) {
+            if (!timeStr || timeStr === '00:00:00') return null;
+            const parts = String(timeStr).split(':');
+            return parseInt(parts[0], 10) + (parseInt(parts[1], 10) / 60);
+        }
+
+        function isCurrentlyActive(r, melbTime) {
+            const days = parseDays(r.rawDays);
+            if (!days.includes(melbTime.day)) return false;
+
+            const start = parseTime(r.rawStart);
+            const end = parseTime(r.rawEnd);
+            if (start === null || end === null) return true; // All day
+            return melbTime.time >= start && melbTime.time <= end;
+        }
+
+        // --- IndexedDB Setup ---
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open('melbourneParking', 1);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('static')) db.createObjectStore('static');
+                };
+                req.onsuccess = (e) => resolve(e.target.result);
+                req.onerror = (e) => reject(e);
+            });
+        }
+
+        async function getCached(key) {
+            try {
+                const db = await openDB();
+                return await new Promise((resolve, reject) => {
+                    const tx = db.transaction('static', 'readonly');
+                    const req = tx.objectStore('static').get(key);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) { return null; }
+        }
+
+        async function setCached(key, value) {
+            try {
+                const db = await openDB();
+                return await new Promise((resolve, reject) => {
+                    const tx = db.transaction('static', 'readwrite');
+                    tx.objectStore('static').put({ value, timestamp: Date.now() }, key);
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            } catch (e) { console.error('Cache save error', e); }
+        }
+
+        // --- Web Worker ---
+        const workerCode = `
+            let bayByKerbsideId = {};
+            let restrictionsByZone = {};
+
+            function decodeRestriction(code) {
+                if (!code) return 'Parking';
+                const c = String(code).toUpperCase();
+                const map = {
+                    'P1': '1 Hour Parking', 'P2': '2 Hour Parking', 'P3': '3 Hour Parking', 'P4': '4 Hour Parking', 'P5': '5 Hour Parking',
+                    'MP1P': '1 Hour Metered', 'MP2P': '2 Hour Metered', 'MP3P': '3 Hour Metered', 'MP4P': '4 Hour Metered', 'MP5P': '5 Hour Metered',
+                    'NP': 'No Parking', 'LT': 'Loading Zone', 'TZ': 'Taxi Zone', 'BZ': 'Bus Zone', 'PER': 'Permit Zone', 'DIS': 'Disability Permit', 'LZ30': 'Loading Zone 30'
+                };
+                return map[c] || code;
+            }
+
+            function formatTime(timeStr) {
+                if (!timeStr || timeStr === '00:00:00') return 'All day';
+                const parts = String(timeStr).split(':');
+                const h = parseInt(parts[0], 10);
+                const m = parts[1];
+                const period = h >= 12 ? 'PM' : 'AM';
+                const hour12 = h === 0 ? 12 : (h > 12 ? h - 12 : h);
+                return hour12 + ':' + m + ' ' + period;
+            }
+
+            self.onmessage = async (e) => {
+                const { type, cachedBays, cachedRestrictions } = e.data;
+                
+                if (type === 'start') {
+                    let bays = cachedBays;
+                    let restrictions = cachedRestrictions;
+                    
+                    if (!bays) {
+                        postMessage({ type: 'status', text: 'Fetching bays...' });
+                        try {
+                            const res = await fetch('https://data.melbourne.vic.gov.au/api/v2/catalog/datasets/on-street-parking-bays/exports/geojson');
+                            bays = await res.json();
+                            postMessage({ type: 'cache', key: 'bays', data: bays });
+                        } catch(err) { postMessage({ type: 'error', message: 'Failed to fetch bays' }); return; }
+                    }
+
+                    if (!restrictions) {
+                        postMessage({ type: 'status', text: 'Fetching restrictions...' });
+                        try {
+                            const res = await fetch('https://discover.data.vic.gov.au/api/3/action/datastore_search?resource_id=6de857f5-da6a-5382-bb41-d4991fbc6c1f&limit=2500');
+                            if (!res.ok) throw new Error('API Error: ' + res.status);
+                            const data = await res.json();
+                            restrictions = data.result.records;
+                            postMessage({ type: 'cache', key: 'restrictions_vic', data: restrictions });
+                        } catch(err) { postMessage({ type: 'error', message: 'Failed to fetch restrictions' }); return; }
+                    }
+                    
+                    bays.features.forEach(f => {
+                        const p = f.properties || {};
+                        const kerbsideId = p.kerbsideid ?? p.kerbside_id ?? null;
+                        if (kerbsideId !== null && kerbsideId !== undefined && kerbsideId !== '') {
+                            bayByKerbsideId[String(kerbsideId)] = f;
+                        }
+                    });
+
+                    restrictions.forEach(r => {
+                        const zone = r.parkingzone ?? r.parking_zone ?? null;
+                        if (zone !== null && zone !== undefined && zone !== '') {
+                            const key = String(zone);
+                            if (!restrictionsByZone[key]) restrictionsByZone[key] = [];
+                            restrictionsByZone[key].push(r);
+                        }
+                    });
+                    
+                    await fetchSensors();
+                } else if (type === 'reload-sensors') {
+                    await fetchSensors();
+                }
+            };
+
+            async function fetchSensors() {
+                postMessage({ type: 'status', text: 'Fetching sensors...' });
+                let sensors = [];
+                let offset = 0;
+                const limit = 100;
+                let total = 0;
+                
+                while (true) {
+                    try {
+                        const res = await fetch('https://data.melbourne.vic.gov.au/api/explore/v2.1/catalog/datasets/on-street-parking-bay-sensors/records?limit=' + limit + '&offset=' + offset);
+                        if (!res.ok) throw new Error('API Error: ' + res.status);
+                        const data = await res.json();
+                        total = data.total_count || 0;
+                        if (data.results && data.results.length > 0) {
+                            sensors = sensors.concat(data.results);
+                            offset += limit;
+                            postMessage({ type: 'status', text: 'Sensors: ' + sensors.length + '/' + total });
+                        } else { break; }
+                        if (offset >= 10000) break; 
+                        if (data.results.length < limit) break;
+                    } catch (e) { postMessage({ type: 'error', message: e.message }); break; }
+                }
+
+                const enriched = sensors.map(s => {
+                    const kerbsideId = String(s.kerbsideid ?? s.kerbside_id ?? s.bay_id ?? s.bayid ?? '');
+                    const bayFeature = bayByKerbsideId[kerbsideId] || null;
+
+                    let geometry = null;
+                    let roadSegment = 'Unknown road segment';
+                    let lat = null, lon = null;
+                    
+                    if (bayFeature) {
+                        geometry = bayFeature.geometry;
+                        const bp = bayFeature.properties || {};
+                        roadSegment = bp.roadsegmentdescription || bp.road_segment_description || roadSegment;
+                        lat = bp.latitude;
+                        lon = bp.longitude;
+                    }
+
+                    const zoneNumber = s.zone_number ?? s.zone ?? null;
+                    let restrictionRecs = [];
+                    if (zoneNumber !== null && zoneNumber !== undefined && zoneNumber !== '') {
+                        restrictionRecs = restrictionsByZone[String(zoneNumber)] || [];
+                    }
+                    
+                    if (lat == null || lon == null) {
+                        lat = s.lat ?? s.latitude;
+                        lon = s.lon ?? s.longitude;
+                        if (s.location) { lon = s.location.lon ?? lon; lat = s.location.lat ?? lat; }
+                    }
+
+                    let status = 'unknown';
+                    const st = (s.status_description || s.status || '').toLowerCase();
+                    if (st.includes('not present') || st.includes('unoccupied') || st.includes('vacant')) status = 'free';
+                    else if (st.includes('present') || st.includes('occupied')) status = 'occupied';
+
+                    const parsedRestrictions = restrictionRecs.map(r => {
+                        const display = r.restriction_display || 'P';
+                        const days = r.restriction_days || 'Anytime';
+                        const startTime = r.time_restrictions_start ? formatTime(r.time_restrictions_start) : '';
+                        const endTime = r.time_restrictions_finish ? formatTime(r.time_restrictions_finish) : '';
+
+                        let structured = decodeRestriction(display);
+                        if (days && days !== 'Anytime') structured += ' • ' + days;
+                        if (startTime && endTime && startTime !== 'All day' && endTime !== 'All day') {
+                            structured += ' • ' + startTime + '–' + endTime;
+                        }
+                        return { 
+                            code: display, 
+                            structured, 
+                            description: display + ' (' + days + ')',
+                            rawDays: r.restriction_days,
+                            rawStart: r.time_restrictions_start,
+                            rawEnd: r.time_restrictions_finish
+                        };
+                    });
+
+                    let centroid = null;
+                    if (geometry) centroid = computeCentroid(geometry);
+                    else if (lat && lon) centroid = [lat, lon];
+
+                    return {
+                        bayId: kerbsideId,
+                        zoneNumber: zoneNumber,
+                        status, roadSegment, geometry, centroid, lat, lon,
+                        lastupdated: s.lastupdated,
+                        status_timestamp: s.status_timestamp,
+                        restrictions: parsedRestrictions
+                    };
+                });
+
+                postMessage({ type: 'data', features: enriched });
+                postMessage({ type: 'status', text: 'Updated ' + new Date().toLocaleTimeString() });
+            }
+
+            function computeCentroid(geom) {
+                try {
+                    if (geom.type === 'Polygon') {
+                        const coords = geom.coordinates[0];
+                        let lat = 0, lon = 0;
+                        for (let i = 0; i < coords.length; i++) { lon += coords[i][0]; lat += coords[i][1]; }
+                        return [lat / coords.length, lon / coords.length];
+                    } else if (geom.type === 'Point') {
+                        return [geom.coordinates[1], geom.coordinates[0]];
+                    } else if (geom.type === 'MultiPolygon') {
+                        const coords = geom.coordinates[0][0];
+                        let lat = 0, lon = 0;
+                        for (let i = 0; i < coords.length; i++) { lon += coords[i][0]; lat += coords[i][1]; }
+                        return [lat / coords.length, lon / coords.length];
+                    }
+                } catch(e) { return null; }
+                return null;
+            }
+        `;
+        
+        const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+        const worker = new Worker(URL.createObjectURL(workerBlob));
+
+        // --- Map Initialization ---
+        const map = L.map('map', { 
+            preferCanvas: true, // Highly optimised for many markers
+            zoomControl: false,
+            minZoom: 12
+        }).setView([-37.8136, 144.9631], 16);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd', maxZoom: 20, maxNativeZoom: 20
+        }).addTo(map);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        const parkingLayer = L.layerGroup().addTo(map);
+        const focusLayer = L.layerGroup().addTo(map);
+
+        let allFeatures = [];
+        let currentFilter = 'all';
+        let focusPoint = null;
+        let activeBay = null;
+        let renderScheduled = false;
+
+        // --- Worker Message Handling ---
+        worker.onmessage = async (e) => {
+            const { type, ...payload } = e.data;
+            if (type === 'status') {
+                document.getElementById('loading-text').innerText = payload.text;
+                document.getElementById('status-text').innerText = payload.text;
+            } else if (type === 'cache') {
+                await setCached(payload.key, payload.data);
+            } else if (type === 'data') {
+                allFeatures = payload.features;
+                document.getElementById('loading-overlay').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 300);
+                updateStats();
+                scheduleRender();
+            } else if (type === 'error') {
+                document.getElementById('status-text').innerText = 'Error: ' + payload.message;
+                document.getElementById('loading-text').innerText = 'Error: ' + payload.message;
+            }
+        };
+
+        async function init() {
+            const cachedBays = await getCached('bays');
+            const cachedRestrictions = await getCached('restrictions_vic');
+            const isStale = (cached) => !cached || (Date.now() - cached.timestamp > 7 * 24 * 60 * 60 * 1000);
+            worker.postMessage({
+                type: 'start',
+                cachedBays: isStale(cachedBays) ? null : cachedBays.value,
+                cachedRestrictions: isStale(cachedRestrictions) ? null : cachedRestrictions.value
+            });
+        }
+
+        function scheduleRender() {
+            if (renderScheduled) return;
+            renderScheduled = true;
+            const run = () => { renderScheduled = false; render(); };
+            if (window.requestIdleCallback) window.requestIdleCallback(run, { timeout: 200 });
+            else setTimeout(run, 100);
+        }
+
+        function getStatusColor(status) {
+            if (status === 'free') return '#10b981';
+            if (status === 'occupied') return '#ef4444';
+            return '#9ca3af';
+        }
+
+        function render() {
+            parkingLayer.clearLayers();
+            if (!allFeatures || allFeatures.length === 0) return;
+            
+            const mapBounds = map.getBounds();
+            let inBounds = [];
+            
+            for (let f of allFeatures) {
+                if (f.centroid && mapBounds.contains(L.latLng(f.centroid))) inBounds.push(f);
+            }
+            
+            // Performance limit to prevent browser lag when zoomed out
+            if (inBounds.length > 1000) {
+                const center = map.getCenter();
+                inBounds.sort((a, b) => center.distanceTo(L.latLng(a.centroid)) - center.distanceTo(L.latLng(b.centroid)));
+                inBounds = inBounds.slice(0, 1000);
+            }
+
+            const melbTime = getMelbourneTimeData();
+            const showPolygons = map.getZoom() >= 17;
+            
+            for (let f of inBounds) {
+                if (currentFilter !== 'all' && f.status !== currentFilter) continue;
+                
+                // Determine active code for label
+                let activeCode = 'P';
+                for (let r of f.restrictions) {
+                    if (isCurrentlyActive(r, melbTime)) {
+                        activeCode = r.code;
+                        break;
+                    }
+                }
+
+                if (showPolygons) {
+                    // Render Polygon if available
+                    if (f.geometry && f.geometry.type !== 'Point') {
+                        try {
+                            const geoJsonLayer = L.geoJSON(f.geometry, {
+                                style: { 
+                                    color: 'white', 
+                                    weight: 1, 
+                                    fillColor: getStatusColor(f.status), 
+                                    fillOpacity: 0.7 
+                                },
+                                onEachFeature: (feature, lyr) => {
+                                    lyr.on('click', () => selectBay(f));
+                                }
+                            });
+                            parkingLayer.addLayer(geoJsonLayer);
+                        } catch(e) {}
+                    } else {
+                        // Fallback to circle marker if no polygon
+                        const marker = L.circleMarker(L.latLng(f.centroid), {
+                            radius: 8,
+                            color: 'white',
+                            weight: 1,
+                            fillColor: getStatusColor(f.status),
+                            fillOpacity: 0.9
+                        });
+                        marker.on('click', () => selectBay(f));
+                        parkingLayer.addLayer(marker);
+                    }
+                    
+                    // Render Text Label (Code Pill)
+                    if (f.centroid) {
+                        const label = L.marker(f.centroid, {
+                            icon: L.divIcon({
+                                className: 'bay-label-container',
+                                html: '<div class="bay-label" style="background-color:' + getStatusColor(f.status) + '">' + escapeHtml(activeCode) + '</div>',
+                                iconSize: [30, 16],
+                                iconAnchor: [15, 8]
+                            }),
+                            interactive: false // Clicks fall through to polygon
+                        });
+                        parkingLayer.addLayer(label);
+                    }
+                } else {
+                    // Zoomed out: Render simple dots (highly performant)
+                    const marker = L.circleMarker(L.latLng(f.centroid), {
+                        radius: 4,
+                        color: 'white',
+                        weight: 1,
+                        fillColor: getStatusColor(f.status),
+                        fillOpacity: 0.8
+                    });
+                    marker.on('click', () => selectBay(f));
+                    parkingLayer.addLayer(marker);
+                }
+            }
+        }
+
+        function selectBay(f) {
+            activeBay = f;
+            
+            focusLayer.clearLayers();
+            if (f.centroid) {
+                L.marker(f.centroid, {
+                    icon: L.divIcon({
+                        className: 'active-marker-icon',
+                        html: '<div style="position:relative;"><div class="active-marker-pulse"></div></div>',
+                        iconSize: [16, 16],
+                        iconAnchor: [8, 8]
+                    }),
+                    interactive: false
+                }).addTo(focusLayer);
+            }
+
+            if (f.centroid) {
+                const targetPoint = map.project(L.latLng(f.centroid), map.getZoom()).subtract([0, 120]);
+                const targetLatLng = map.unproject(targetPoint, map.getZoom());
+                map.panTo(targetLatLng, { duration: 0.5 });
+            }
+
+            document.getElementById('view-overview').classList.add('hidden');
+            document.getElementById('view-details').classList.remove('hidden');
+            document.getElementById('view-details').classList.add('view-transition');
+            
+            const sheet = document.getElementById('bottom-sheet');
+            if (sheet.classList.contains('collapsed')) {
+                sheet.classList.replace('collapsed', 'expanded');
+            }
+
+            updateDetailsView(f);
+        }
+
+        function backToOverview() {
+            activeBay = null;
+            focusLayer.clearLayers();
+            if (focusPoint) {
+                 L.circleMarker(focusPoint, { radius: 8, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.5, weight: 2 }).addTo(focusLayer);
+            }
+            document.getElementById('view-details').classList.add('hidden');
+            document.getElementById('view-overview').classList.remove('hidden');
+            document.getElementById('view-overview').classList.add('view-transition');
+        }
+
+        function updateDetailsView(f) {
+            document.getElementById('details-status-time').innerText = 'Updated ' + formatDateTime(f.lastupdated);
+            
+            let distHtml = focusPoint ? '<div class="text-sm text-blue-600 font-semibold mb-3 flex items-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>' + map.distance(focusPoint, L.latLng(f.centroid)).toFixed(0) + ' m away</div>' : '';
+
+            const melbTime = getMelbourneTimeData();
+            let activeRestriction = null;
+            let otherRestrictions = [];
+            
+            f.restrictions.forEach(r => {
+                if (isCurrentlyActive(r, melbTime)) activeRestriction = r;
+                else otherRestrictions.push(r);
+            });
+
+            let restrictionsHtml = '';
+            if (activeRestriction) {
+                restrictionsHtml += `
+                    <div class="p-4 bg-blue-50 rounded-2xl border border-blue-200">
+                        <div class="flex items-center mb-2">
+                            <span class="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Active Now</span>
+                        </div>
+                        <div class="text-base font-bold text-gray-800">${escapeHtml(activeRestriction.structured)}</div>
+                        <div class="text-xs text-gray-500 mt-1">${escapeHtml(activeRestriction.description)}</div>
+                    </div>
+                `;
+            } else {
+                restrictionsHtml += `
+                    <div class="p-4 bg-green-50 rounded-2xl border border-green-200">
+                        <div class="flex items-center mb-2">
+                            <span class="px-2 py-0.5 bg-green-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Active Now</span>
+                        </div>
+                        <div class="text-base font-bold text-gray-800">Unrestricted</div>
+                        <div class="text-xs text-gray-500 mt-1">No active time-based restrictions right now.</div>
+                    </div>
+                `;
+            }
+
+            if (otherRestrictions.length > 0) {
+                restrictionsHtml += '<div class="mt-4"><h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Other Times</h3><div class="space-y-2">';
+                otherRestrictions.forEach(r => {
+                    restrictionsHtml += `
+                        <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                            <div class="text-sm font-semibold text-gray-700">${escapeHtml(r.structured)}</div>
+                            <div class="text-xs text-gray-400 mt-0.5">${escapeHtml(r.description)}</div>
+                        </div>
+                    `;
+                });
+                restrictionsHtml += '</div></div>';
+            }
+
+            document.getElementById('details-content').innerHTML = `
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 leading-tight">${escapeHtml(f.roadSegment)}</h2>
+                    <div class="mt-2 mb-4 flex items-center space-x-3">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold text-white ${f.status === 'free' ? 'bg-green-500' : f.status === 'occupied' ? 'bg-red-500' : 'bg-gray-400'}">${f.status.toUpperCase()}</span>
+                        <span class="text-xs text-gray-500 font-medium">Bay ID: ${escapeHtml(f.bayId)} ${f.zoneNumber ? '• Zone: ' + escapeHtml(f.zoneNumber) : ''}</span>
+                    </div>
+                    ${distHtml}
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">Restrictions</h3>
+                    ${restrictionsHtml}
+                </div>
+                <div class="pt-2 text-center text-xs text-gray-400 italic">Sensor status shows vehicle presence only. Always verify via street signs.</div>
+            `;
+        }
+
+        function updateStats() {
+            let total = allFeatures.length;
+            let free = allFeatures.filter(f => f.status === 'free').length;
+            let occupied = allFeatures.filter(f => f.status === 'occupied').length;
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-free').innerText = free;
+            document.getElementById('stat-occupied').innerText = occupied;
+            updateNearbyList();
+        }
+
+        function updateNearbyList() {
+            const panel = document.getElementById('nearby-panel');
+            const list = document.getElementById('nearby-list');
+            list.innerHTML = '';
+            
+            if (!focusPoint) {
+                panel.classList.add('hidden');
+                document.getElementById('stat-near').innerText = '0';
+                return;
+            }
+            
+            panel.classList.remove('hidden');
+            const nearby = allFeatures.filter(f => f.centroid && map.distance(focusPoint, L.latLng(f.centroid)) <= 600)
+                .map(f => ({ ...f, dist: map.distance(focusPoint, L.latLng(f.centroid)) }))
+                .sort((a, b) => a.dist - b.dist);
+                
+            document.getElementById('stat-near').innerText = nearby.length;
+            
+            if (nearby.length === 0) {
+                list.innerHTML = '<div class="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-xl">No bays found within 600m</div>';
+                return;
+            }
+            
+            nearby.slice(0, 15).forEach(f => {
+                const summary = f.restrictions[0] ? f.restrictions[0].structured.split(' • ').slice(0, 2).join(' ') : 'Parking Bay';
+                const div = document.createElement('div');
+                div.className = 'p-3 rounded-xl bg-white border border-gray-100 active:bg-gray-50 cursor-pointer transition flex justify-between items-center';
+                div.innerHTML = `
+                    <div class="flex-1 min-w-0 mr-3">
+                        <div class="text-sm font-semibold text-gray-800 truncate">${escapeHtml(f.roadSegment)}</div>
+                        <div class="text-xs text-gray-500 truncate mt-0.5">${escapeHtml(summary)}</div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <div class="text-xs font-bold ${f.status === 'free' ? 'text-green-600' : f.status === 'occupied' ? 'text-red-600' : 'text-gray-500'}">${f.dist.toFixed(0)}m</div>
+                        <div class="text-[10px] uppercase font-semibold ${f.status === 'free' ? 'text-green-500' : f.status === 'occupied' ? 'text-red-500' : 'text-gray-400'} mt-0.5">${f.status}</div>
+                    </div>
+                `;
+                div.addEventListener('click', () => selectBay(f));
+                list.appendChild(div);
+            });
+        }
+
+        // --- Event Listeners ---
+        map.on('zoomend moveend', scheduleRender);
+
+        const sheet = document.getElementById('bottom-sheet');
+        document.getElementById('sheet-handle').addEventListener('click', () => {
+            if (sheet.classList.contains('collapsed')) {
+                sheet.classList.replace('collapsed', 'expanded');
+            } else {
+                sheet.classList.replace('expanded', 'collapsed');
+            }
+        });
+
+        document.getElementById('btn-back').addEventListener('click', backToOverview);
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                scheduleRender();
+            });
+        });
+
+        document.getElementById('btn-reload').addEventListener('click', () => {
+            document.getElementById('status-text').innerText = 'Reloading...';
+            worker.postMessage({ type: 'reload-sensors' });
+        });
+
+        document.getElementById('btn-locate').addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => setFocusPoint(pos.coords.latitude, pos.coords.longitude), err => {
+                    document.getElementById('status-text').innerText = 'Geolocation denied';
+                });
+            }
+        });
+
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            focusPoint = null;
+            focusLayer.clearLayers();
+            updateNearbyList();
+        });
+
+        function setFocusPoint(lat, lon) {
+            focusPoint = L.latLng(lat, lon);
+            focusLayer.clearLayers();
+            L.circleMarker(focusPoint, { radius: 8, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.5, weight: 2 }).addTo(focusLayer);
+            map.flyTo(focusPoint, 18, { duration: 1 });
+            
+            if (activeBay) backToOverview();
+            if (sheet.classList.contains('collapsed')) sheet.classList.replace('collapsed', 'expanded');
+            updateNearbyList();
+        }
+
+        let searchTimeout, searchAbort;
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const q = e.target.value;
+            if (searchAbort) searchAbort.abort();
+            
+            if (q.length < 3) {
+                document.getElementById('search-results').classList.add('hidden');
+                return;
+            }
+            
+            searchTimeout = setTimeout(async () => {
+                searchAbort = new AbortController();
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=au&q=${encodeURIComponent(q + ', Melbourne, Victoria, Australia')}`, { signal: searchAbort.signal });
+                    const data = await res.json();
+                    const resultsDiv = document.getElementById('search-results');
+                    if (data.length === 0) {
+                        resultsDiv.innerHTML = '<div class="p-4 text-sm text-gray-500 text-center">No results found</div>';
+                    } else {
+                        resultsDiv.innerHTML = data.map(r => `<div class="p-3 hover:bg-gray-50 cursor-pointer text-sm border-b border-gray-50 last:border-0 truncate" data-lat="${r.lat}" data-lon="${r.lon}">${escapeHtml(r.display_name)}</div>`).join('');
+                    }
+                    resultsDiv.classList.remove('hidden');
+                    resultsDiv.querySelectorAll('div[data-lat]').forEach(el => {
+                        el.addEventListener('click', () => {
+                            setFocusPoint(parseFloat(el.dataset.lat), parseFloat(el.dataset.lon));
+                            resultsDiv.classList.add('hidden');
+                            document.getElementById('search-input').value = '';
+                            document.getElementById('search-input').blur();
+                        });
+                    });
+                } catch (e) { if (e.name !== 'AbortError') console.error(e); }
+            }, 350);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#search-input') && !e.target.closest('#search-results')) {
+                document.getElementById('search-results').classList.add('hidden');
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>
