@@ -262,7 +262,7 @@
 
     <!-- Bottom Sheet -->
     <div id="bottom-sheet" class="collapsed glass">
-    <div id="sheet-handle" class="pt-3 pb-2 cursor-pointer flex justify-center flex-shrink-0">
+    <div id="sheet-handle" class="pt-2 pb-4 cursor-pointer flex justify-center flex-shrink-0 -mb-2">
         <div class="w-12 h-1.5 bg-gray-400 rounded-full"></div>
     </div>
         
@@ -1354,9 +1354,9 @@
         let sheetTouchStartTime = 0;
         let sheetDragging = false;
         let sheetStartTransform = 0;
+        const sheetHandle = document.getElementById('sheet-handle');
 
-        sheet.addEventListener('touchstart', (e) => {
-            if (e.target.closest('.sheet-content') && e.target.closest('.sheet-content').scrollHeight > e.target.closest('.sheet-content').clientHeight) return;
+        sheetHandle.addEventListener('touchstart', (e) => {
             sheetTouchStartY = e.touches[0].clientY;
             sheetTouchStartTime = Date.now();
             sheetDragging = false;
@@ -1365,7 +1365,7 @@
             sheetStartTransform = matrix.m42;
         }, { passive: true });
 
-        sheet.addEventListener('touchmove', (e) => {
+        sheetHandle.addEventListener('touchmove', (e) => {
             const deltaY = e.touches[0].clientY - sheetTouchStartY;
             if (!sheetDragging && Math.abs(deltaY) > 8) {
                 sheetDragging = true;
@@ -1379,7 +1379,7 @@
             sheet.style.transform = 'translateY(' + newTranslate + 'px)';
         }, { passive: true });
 
-        sheet.addEventListener('touchend', (e) => {
+        sheetHandle.addEventListener('touchend', (e) => {
             if (!sheetDragging) return;
             sheetDragging = false;
             sheet.classList.remove('dragging');
