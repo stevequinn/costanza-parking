@@ -6,32 +6,34 @@ Melbourne Street Parking
 
 ## Featuers
 
-<figure>
-<img src="assets/costanza-parking-01.png" width="300">
-<figcaption>Bald man loading screen while data is loaded</figcaption>
-</figure>
-
-<figure>
-<img src="assets/costanza-parking-02.png" width="300">
-<figcaption>Parking sensor based map markers</figcaption>
-</figure>
-
-
-<figure>
-<img src="assets/costanza-parking-03.png" width="300">
-<figcaption>Parking spot deetails</figcaption>
-</figure>
-
-
-<figure>
-<img src="assets/costanza-parking-04.png" width="300">
-<figcaption>Parking restriction markers on zoom</figcaption>
-</figure>
-
-<figure>
-<img src="assets/costanza-parking-05.png" width="300">
-<figcaption>Parking spots near search location</figcaption>
-</figure>
+<table>
+  <tr>
+    <td align="center">
+      <img src="assets/costanza-parking-01.png" width="300"><br>
+      <sub><b>Loading screen while parking data is fetched</b></sub>
+    </td>
+    <td align="center">
+      <img src="assets/costanza-parking-02.png" width="300"><br>
+      <sub><b>Parking sensor-based map markers</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/costanza-parking-03.png" width="300"><br>
+      <sub><b>Parking spot details</b></sub>
+    </td>
+    <td align="center">
+      <img src="assets/costanza-parking-04.png" width="300"><br>
+      <sub><b>Parking restriction markers when zoomed in</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/costanza-parking-05.png" width="300"><br>
+      <sub><b>Parking spots near the searched location</b></sub>
+    </td>
+  </tr>
+</table>
 
 
 ## Tech
