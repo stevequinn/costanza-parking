@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        body { margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
         #map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; background: #f8fafc; }
         
         .glass {
@@ -86,13 +86,15 @@
         /* Bottom Sheet Mechanics */
         #bottom-sheet {
             position: absolute; bottom: 0; left: 0; right: 0; z-index: 1000;
-            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
             border-radius: 24px 24px 0 0;
-            max-height: 85vh;
+            min-height: 200px;
+            max-height: 85dvh;
             display: flex; flex-direction: column;
+            will-change: transform;
         }
-        #bottom-sheet.collapsed { transform: translateY(calc(100% - 110px)); }
-        #bottom-sheet.expanded { transform: translateY(0); }
+        #bottom-sheet.collapsed { z-index: 1000; }
+        #bottom-sheet.expanded { z-index: 1010; }
+        #bottom-sheet.dragging { transition: none !important; }
         
         .sheet-content { 
             overflow-y: auto; 
@@ -363,6 +365,15 @@
     </div>
 
     <script>
+        // --- Bottom Sheet State ---
+        const sheet = document.getElementById('bottom-sheet');
+        const sheetHandle = document.getElementById('sheet-handle');
+        const HANDLE_AREA = 48;
+        let sheetDragging = false;
+        let sheetTouchStartY = 0;
+        let sheetTouchStartTime = 0;
+        let sheetStartTranslate = 0;
+
         // --- Utility Functions ---
         function costanzaSvg() {
             return `<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
@@ -507,6 +518,7 @@
                 const c = String(code).toUpperCase();
                 const map = {
                     'P1': '1 Hour Parking', 'P2': '2 Hour Parking', 'P3': '3 Hour Parking', 'P4': '4 Hour Parking', 'P5': '5 Hour Parking',
+                    '1P': '1 Hour Parking', '2P': '2 Hour Parking', '3P': '3 Hour Parking', '4P': '4 Hour Parking', '5P': '5 Hour Parking',
                     'MP1P': '1 Hour Metered', 'MP2P': '2 Hour Metered', 'MP3P': '3 Hour Metered', 'MP4P': '4 Hour Metered', 'MP5P': '5 Hour Metered',
                     'NP': 'No Parking', 'LT': 'Loading Zone', 'TZ': 'Taxi Zone', 'BZ': 'Bus Zone', 'PER': 'Permit Zone', 'DIS': 'Disability Permit', 'LZ30': 'Loading Zone 30'
                 };
@@ -979,9 +991,8 @@
             document.getElementById('view-details').classList.remove('hidden');
             document.getElementById('view-details').classList.add('view-transition');
             
-            const sheet = document.getElementById('bottom-sheet');
             if (sheet.classList.contains('collapsed')) {
-                sheet.classList.replace('collapsed', 'expanded');
+                setSheetState('expanded');
             }
 
             updateDetailsView(f);
@@ -1190,15 +1201,6 @@
         // --- Event Listeners ---
         map.on('zoomend moveend', scheduleRender);
 
-        const sheet = document.getElementById('bottom-sheet');
-        document.getElementById('sheet-handle').addEventListener('click', () => {
-            if (sheet.classList.contains('collapsed')) {
-                sheet.classList.replace('collapsed', 'expanded');
-            } else {
-                sheet.classList.replace('expanded', 'collapsed');
-            }
-        });
-
         document.getElementById('btn-back').addEventListener('click', backToOverview);
         document.getElementById('btn-search-back').addEventListener('click', backFromSearch);
 
@@ -1236,7 +1238,7 @@
             map.flyTo(focusPoint, 18, { duration: 1 });
             
             if (activeBay) backToOverview();
-            if (sheet.classList.contains('collapsed')) sheet.classList.replace('collapsed', 'expanded');
+            if (sheet.classList.contains('collapsed')) setSheetState('expanded');
             
             if (searchName) {
                 showSearchView();
@@ -1403,12 +1405,40 @@
         const searchObserver = new MutationObserver(() => { activeResultIndex = -1; });
         searchObserver.observe(document.getElementById('search-results'), { attributes: true, attributeFilter: ['class'] });
 
-        // --- Bottom Sheet Swipe Gesture ---
-        let sheetTouchStartY = 0;
-        let sheetTouchStartTime = 0;
-        let sheetDragging = false;
-        let sheetStartTransform = 0;
-        const sheetHandle = document.getElementById('sheet-handle');
+        // --- Bottom Sheet Mechanics ---
+        function getSheetMaxTranslate() {
+            return sheet.offsetHeight - HANDLE_AREA;
+        }
+
+        function setSheetTranslate(px, animate) {
+            const max = getSheetMaxTranslate();
+            const clamped = Math.max(0, Math.min(max, px));
+            if (animate) {
+                sheet.style.transition = 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
+            } else {
+                sheet.style.transition = 'none';
+            }
+            sheet.style.transform = 'translateY(' + clamped + 'px)';
+        }
+
+        function setSheetState(state) {
+            sheet.classList.remove('expanded', 'collapsed');
+            sheet.classList.add(state);
+            if (state === 'expanded') {
+                setSheetTranslate(0, true);
+            } else {
+                setSheetTranslate(getSheetMaxTranslate(), true);
+            }
+        }
+
+        function initSheetPosition() {
+            sheet.style.transition = 'none';
+            sheet.style.transform = 'translateY(0)';
+            sheet.classList.add('expanded');
+        }
+
+        // Set initial position after layout
+        requestAnimationFrame(() => initSheetPosition());
 
         sheetHandle.addEventListener('touchstart', (e) => {
             sheetTouchStartY = e.touches[0].clientY;
@@ -1416,7 +1446,7 @@
             sheetDragging = false;
             const transform = window.getComputedStyle(sheet).transform;
             const matrix = new DOMMatrixReadOnly(transform);
-            sheetStartTransform = matrix.m42;
+            sheetStartTranslate = matrix.m42;
         }, { passive: true });
 
         sheetHandle.addEventListener('touchmove', (e) => {
@@ -1426,10 +1456,8 @@
                 sheet.classList.add('dragging');
             }
             if (!sheetDragging) return;
-            const sheetHeight = sheet.offsetHeight;
-            const maxTranslate = 0;
-            const minTranslate = sheetHeight - 110;
-            const newTranslate = Math.max(minTranslate, Math.min(maxTranslate, sheetStartTransform + deltaY));
+            const max = getSheetMaxTranslate();
+            const newTranslate = Math.max(0, Math.min(max, sheetStartTranslate + deltaY));
             sheet.style.transform = 'translateY(' + newTranslate + 'px)';
         }, { passive: true });
 
@@ -1437,21 +1465,27 @@
             if (!sheetDragging) return;
             sheetDragging = false;
             sheet.classList.remove('dragging');
-            const deltaY = (e.changedTouches[0].clientY) - sheetTouchStartY;
+            const deltaY = e.changedTouches[0].clientY - sheetTouchStartY;
             const elapsed = Date.now() - sheetTouchStartTime;
             const velocity = Math.abs(deltaY) / elapsed;
-            const sheetHeight = sheet.offsetHeight;
-            const currentTranslate = sheetStartTransform + deltaY;
-            const midpoint = sheetHeight / 2 - 55;
+            const currentTranslate = sheetStartTranslate + deltaY;
+            const midpoint = getSheetMaxTranslate() / 2;
 
-            if (velocity > 0.3 || (deltaY > 0 && currentTranslate > midpoint)) {
-                sheet.classList.replace('expanded', 'collapsed');
-                sheet.style.transform = '';
+            if (velocity > 0.3 || currentTranslate > midpoint) {
+                setSheetState('collapsed');
             } else {
-                sheet.classList.replace('collapsed', 'expanded');
-                sheet.style.transform = '';
+                setSheetState('expanded');
             }
         }, { passive: true });
+
+        // Handle tap to toggle
+        sheetHandle.addEventListener('click', () => {
+            if (sheet.classList.contains('collapsed')) {
+                setSheetState('expanded');
+            } else {
+                setSheetState('collapsed');
+            }
+        });
 
         // Update ARIA on search focus
         document.getElementById('search-input').addEventListener('focus', () => {
