@@ -3,7 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Melbourne Live Parking</title>
+    <title>Costanza Carpark — Melbourne Parking</title>
+    <meta name="description" content="Real-time parking availability for Melbourne. Because circling the block is NOT a personality trait.">
+    
+    <!-- OpenGraph -->
+    <meta property="og:title" content="Costanza Carpark — Melbourne Parking">
+    <meta property="og:description" content="Find a park before you lose your mind. Real-time sensor data for Melbourne street parking. No more 'just one more lap'.">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="en_AU">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Costanza Carpark — Melbourne Parking">
+    <meta name="twitter:description" content="Real-time parking data for Melbourne. Because your passengers are judging you.">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -22,23 +35,23 @@
         input, select, textarea { font-size: 16px; } /* Prevent iOS auto-zoom */
 
         /* Map Bay Labels */
-        .bay-label {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 9px;
-            font-weight: 800;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
-            border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.9);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            white-space: nowrap;
-            padding: 2px 5px;
-            letter-spacing: -0.5px;
-            pointer-events: none;
-            transform: translateY(-2px);
-        }
+.bay-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 900;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    border-radius: 4px;
+    border: 1.5px solid rgba(255,255,255,1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    white-space: nowrap;
+    padding: 3px 7px;
+    letter-spacing: -0.3px;
+    pointer-events: none;
+    transform: translateY(-2px);
+}
         
         #loading-overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -51,9 +64,18 @@
         .spinner {
             width: 48px; height: 48px;
             border: 4px solid #e5e7eb;
-            border-top-color: #3b82f6;
+            border-top-color: #57534e;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+        }
+        .spinner-sm {
+            width: 14px; height: 14px;
+            border: 2px solid #d1d5db;
+            border-top-color: #57534e;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         
@@ -83,21 +105,21 @@
             color: white !important;
         }
 
-        .active-marker-pulse {
-            width: 24px;
-            height: 24px;
-            background: rgba(59, 130, 246, 0.4);
-            border-radius: 50%;
-            position: absolute;
-            top: -4px;
-            left: -4px;
-            animation: pulse 1.5s infinite;
-            z-index: -1;
-        }
-        @keyframes pulse {
-            0% { transform: scale(0.8); opacity: 0.8; }
-            100% { transform: scale(2.2); opacity: 0; }
-        }
+.active-marker-pulse {
+    width: 28px;
+    height: 28px;
+    background: rgba(87, 83, 78, 0.5);
+    border-radius: 50%;
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    animation: pulse 1.5s infinite;
+    z-index: -1;
+}
+@keyframes pulse {
+    0% { transform: scale(0.8); opacity: 0.9; }
+    100% { transform: scale(2.4); opacity: 0; }
+}
 
         .view-transition {
             animation: slideUp 0.3s ease-out;
@@ -123,7 +145,7 @@
             border-radius: 50%;
             flex-shrink: 0;
         }
-        #staleness-badge.fresh { background: #ecfdf5; color: #059669; }
+        #staleness-badge.fresh { background: #ecfdf5; color: #57534e; }
         #staleness-badge.fresh .dot { background: #10b981; }
         #staleness-badge.stale { background: #fffbeb; color: #d97706; }
         #staleness-badge.stale .dot { background: #f59e0b; animation: pulse-dot 1.5s infinite; }
@@ -205,9 +227,13 @@
     <div id="map"></div>
     
     <div id="loading-overlay">
-        <div class="text-center">
-            <div class="spinner mx-auto mb-4"></div>
-            <div id="loading-text" class="text-sm font-semibold text-gray-600">Initializing...</div>
+        <div class="text-center px-8">
+            <div class="mb-6" id="loading-logo"></div>
+            <h1 class="text-2xl font-bold text-gray-800 tracking-tight mb-1">Costanza Carpark</h1>
+            <p class="text-xs text-gray-500 uppercase tracking-widest mb-6">Melbourne Parking</p>
+            <div class="spinner mx-auto mb-5"></div>
+            <div id="loading-text" class="text-sm font-medium text-gray-600 mb-3">Finding the spot...</div>
+            <div id="loading-quote" class="text-xs text-gray-400 italic max-w-[280px] mx-auto leading-relaxed"></div>
         </div>
     </div>
 
@@ -215,7 +241,7 @@
     <div class="absolute top-0 left-0 right-0 z-[1001] p-4 pt-[calc(1rem+env(safe-area-inset-top))] pointer-events-none">
         <div class="max-w-md mx-auto flex space-x-2 pointer-events-auto">
             <div class="relative flex-1">
-                <input id="search-input" type="text" placeholder="Search address in Melbourne..." role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="search-results" class="w-full px-5 py-3 rounded-full glass border-none focus:ring-2 focus:ring-blue-500 outline-none text-sm shadow-sm">
+                <input autocomplete="off" id="search-input" type="search" placeholder="Search address in Melbourne..." role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="search-results" class="w-full px-5 py-3 rounded-full glass border-none focus:ring-2 focus:ring-stone-600 outline-none text-sm shadow-sm">
                 <div id="search-results" role="listbox" aria-label="Search results" class="absolute mt-2 w-full bg-white rounded-2xl shadow-xl border border-gray-100 hidden max-h-60 overflow-y-auto"></div>
             </div>
             <button id="btn-locate" class="w-12 h-12 flex items-center justify-center rounded-full glass text-gray-700 active:scale-95 transition shadow-sm">
@@ -236,57 +262,57 @@
 
     <!-- Bottom Sheet -->
     <div id="bottom-sheet" class="collapsed glass">
-        <div id="sheet-handle" class="pt-3 pb-2 cursor-pointer flex justify-center flex-shrink-0">
-            <div class="w-10 h-1.5 bg-gray-300 rounded-full"></div>
-        </div>
+    <div id="sheet-handle" class="pt-3 pb-2 cursor-pointer flex justify-center flex-shrink-0">
+        <div class="w-12 h-1.5 bg-gray-400 rounded-full"></div>
+    </div>
         
         <!-- View 1: Overview -->
         <div id="view-overview" class="sheet-content px-5">
             <div class="flex items-center justify-between mb-3 mt-1">
-                <h1 class="text-lg font-bold text-gray-800 tracking-tight">Melbourne Parking</h1>
-                <div id="staleness-badge" class="fresh" style="visibility:hidden">
-                    <span class="dot"></span>
-                    <span id="staleness-text">Updated just now</span>
+                <div class="flex items-center space-x-2.5 min-w-0">
+                    <span id="title-logo" class="w-6"></span>
+                    <h1 class="text-lg sm:text-lg font-bold text-gray-800 tracking-tight truncate">Costanza Carpark</h1>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div id="staleness-badge" class="fresh" style="visibility:hidden">
+                        <span class="dot"></span>
+                        <span id="staleness-text">Updated just now</span>
+                    </div>
+                    <button id="btn-reload" class="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 active:scale-95 transition text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed" title="Reload sensors">
+                        <svg id="reload-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
                 </div>
             </div>
             
-            <div class="flex space-x-2 mb-3">
-                <button data-filter="all" class="filter-btn active flex-1 py-2.5 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 active:scale-95 transition">All</button>
-                <button data-filter="free" class="filter-btn flex-1 py-2.5 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 active:scale-95 transition">Free</button>
-                <button data-filter="occupied" class="filter-btn flex-1 py-2.5 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 active:scale-95 transition">Taken</button>
-            </div>
+        <div class="flex space-x-2 mb-3">
+            <button data-filter="all" class="filter-btn active flex-1 py-3 rounded-xl text-xs font-bold tracking-wide bg-gray-100 text-gray-600 active:scale-95 transition">All</button>
+            <button data-filter="free" class="filter-btn flex-1 py-3 rounded-xl text-xs font-bold tracking-wide bg-gray-100 text-gray-600 active:scale-95 transition">Free</button>
+            <button data-filter="occupied" class="filter-btn flex-1 py-3 rounded-xl text-xs font-bold tracking-wide bg-gray-100 text-gray-600 active:scale-95 transition">Taken</button>
+        </div>
 
-            <div class="grid grid-cols-4 gap-2 text-center mb-4">
-                <div class="bg-gray-50 rounded-xl p-2 border border-gray-100">
-                    <div id="stat-total" class="text-xl font-bold text-gray-800">0</div>
-                    <div class="text-[10px] text-gray-500 uppercase tracking-wider">Total</div>
-                </div>
-                <div class="bg-green-50 rounded-xl p-2 border border-green-100">
-                    <div id="stat-free" class="text-xl font-bold text-green-600">0</div>
-                    <div class="text-[10px] text-green-500 uppercase tracking-wider">Free</div>
-                </div>
-                <div class="bg-red-50 rounded-xl p-2 border border-red-100">
-                    <div id="stat-occupied" class="text-xl font-bold text-red-600">0</div>
-                    <div class="text-[10px] text-red-500 uppercase tracking-wider">Taken</div>
-                </div>
-                <div class="bg-blue-50 rounded-xl p-2 border border-blue-100">
-                    <div id="stat-visible" class="text-xl font-bold text-blue-600">0</div>
-                    <div class="text-[10px] text-blue-500 uppercase tracking-wider">Visible</div>
-                </div>
+        <div class="grid grid-cols-4 gap-2 text-center mb-4">
+            <div class="bg-gray-50 rounded-xl p-2 sm:p-2.5 border border-gray-100">
+                <div id="stat-total" class="text-xl sm:text-2xl font-bold text-gray-800 tabular-nums leading-none mb-1">0</div>
+                <div class="text-[9px] sm:text-[10px] text-gray-500 font-medium uppercase tracking-wider">Total</div>
             </div>
-
-            <div class="flex space-x-2 mb-4">
-                <button id="btn-reload" class="flex-1 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold active:scale-95 transition flex items-center justify-center space-x-2 shadow-md shadow-blue-200">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    <span>Reload Sensors</span>
-                </button>
-                <button id="btn-clear" class="px-4 py-3 rounded-xl bg-gray-200 text-gray-700 text-sm font-semibold active:scale-95 transition">Clear</button>
+            <div class="bg-green-50 rounded-xl p-2 sm:p-2.5 border border-green-100">
+                <div id="stat-free" class="text-xl sm:text-2xl font-bold text-green-600 tabular-nums leading-none mb-1">0</div>
+                <div class="text-[9px] sm:text-[10px] text-green-500 font-medium uppercase tracking-wider">Free</div>
             </div>
+            <div class="bg-red-50 rounded-xl p-2 sm:p-2.5 border border-red-100">
+                <div id="stat-occupied" class="text-xl sm:text-2xl font-bold text-red-600 tabular-nums leading-none mb-1">0</div>
+                <div class="text-[9px] sm:text-[10px] text-red-500 font-medium uppercase tracking-wider">Taken</div>
+            </div>
+            <div class="bg-stone-50 rounded-xl p-2 sm:p-2.5 border border-stone-100">
+                <div id="stat-visible" class="text-xl sm:text-2xl font-bold text-stone-700 tabular-nums leading-none mb-1">0</div>
+                <div class="text-[9px] sm:text-[10px] text-stone-600 font-medium uppercase tracking-wider">Visible</div>
+            </div>
+        </div>
             
             <div id="nearby-panel" class="pb-4 hidden">
-                <h2 class="text-sm font-bold text-gray-800 mb-2 flex items-center justify-between">
+                <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wider mb-2 flex items-center justify-between">
                     <span>Nearby Parking</span>
-                    <span class="text-[10px] text-gray-500 font-normal bg-gray-100 px-2 py-1 rounded-full">600m radius</span>
+                    <span class="text-[10px] text-gray-500 font-normal normal-case tracking-normal bg-gray-100 px-2 py-1 rounded-full">600m radius</span>
                 </h2>
                 <div id="nearby-list" class="space-y-2"></div>
             </div>
@@ -295,7 +321,7 @@
         <!-- View 2: Bay Details -->
         <div id="view-details" class="sheet-content px-5 hidden">
             <div class="flex justify-between items-center mb-4 mt-1">
-                <button id="btn-back" class="flex items-center text-blue-600 text-sm font-semibold active:scale-95 transition">
+                <button id="btn-back" class="flex items-center text-stone-700 text-sm font-semibold active:scale-95 transition">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     Back
                 </button>
@@ -303,10 +329,55 @@
             </div>
             <div id="details-content" class="space-y-4"></div>
         </div>
+
+        <!-- View 3: Search Location -->
+        <div id="view-search" class="sheet-content px-5 hidden">
+            <div class="flex justify-between items-center mb-4 mt-1">
+                <button id="btn-search-back" class="flex items-center text-stone-700 text-sm font-semibold active:scale-95 transition">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Back
+                </button>
+                <div class="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Search Location</div>
+            </div>
+            <div id="search-location-content" class="space-y-4"></div>
+        </div>
     </div>
 
     <script>
         // --- Utility Functions ---
+        function costanzaSvg() {
+            return `<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <clipPath id="circleClip"><circle cx="120" cy="120" r="120"/></clipPath>
+</defs>
+<circle cx="120" cy="120" r="120" fill="#1F4B4C"/>
+<g clip-path="url(#circleClip)">
+  <path d="M 60 98 Q 52 140 68 168 Q 57 148 58 118 Q 58 98 60 98 Z" fill="#3B2A20"/>
+  <path d="M 180 98 Q 188 140 172 168 Q 183 148 182 118 Q 182 98 180 98 Z" fill="#3B2A20"/>
+  <ellipse cx="63" cy="133" rx="9" ry="15" fill="#E3B084"/>
+  <ellipse cx="177" cy="133" rx="9" ry="15" fill="#E3B084"/>
+  <rect x="100" y="176" width="40" height="34" fill="#E3B084"/>
+  <ellipse cx="120" cy="126" rx="56" ry="61" fill="#E3B084"/>
+  <path d="M 68 96 C 60 108 58 132 66 154 C 70 140 71 128 70 118 C 69 110 70 102 74 98 C 72 96 70 95 68 96 Z" fill="#3B2A20"/>
+  <path d="M 172 96 C 180 108 182 132 174 154 C 170 140 169 128 170 118 C 171 110 170 102 166 98 C 168 96 170 95 172 96 Z" fill="#3B2A20"/>
+  <ellipse cx="120" cy="88" rx="36" ry="26" fill="#EDC496" opacity="0.55"/>
+  <path d="M 90 106 Q 103 97 117 104 L 115 111 Q 103 105 92 112 Z" fill="#3B2A20"/>
+  <path d="M 150 106 Q 137 97 123 104 L 125 111 Q 137 105 148 112 Z" fill="#3B2A20"/>
+  <circle cx="101" cy="123" r="4.2" fill="#1A1A1A"/>
+  <circle cx="139" cy="123" r="4.2" fill="#1A1A1A"/>
+  <path d="M 116 118 Q 112 136 118 142 L 126 140" stroke="#C99A67" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 100 160 Q 120 153 140 160" stroke="#7A3B2E" stroke-width="4.2" fill="none" stroke-linecap="round"/>
+  <rect x="80" y="112" width="35" height="25" rx="6" fill="none" stroke="#1A1A1A" stroke-width="4.5"/>
+  <rect x="125" y="112" width="35" height="25" rx="6" fill="none" stroke="#1A1A1A" stroke-width="4.5"/>
+  <line x1="115" y1="123" x2="125" y2="123" stroke="#1A1A1A" stroke-width="4.5"/>
+  <line x1="80" y1="121" x2="67" y2="116" stroke="#1A1A1A" stroke-width="4.5" stroke-linecap="round"/>
+  <line x1="160" y1="121" x2="173" y2="116" stroke="#1A1A1A" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M 78 208 L 110 186 L 120 202 L 130 186 L 162 208 L 162 240 L 78 240 Z" fill="#F5ECD9"/>
+  <path d="M 55 222 Q 120 194 185 222 L 185 240 L 55 240 Z" fill="#B5482D"/>
+</g>
+</svg>`;
+        }
+
         function escapeHtml(str) {
             if (!str) return '';
             return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -621,6 +692,7 @@
         let allFeatures = [];
         let currentFilter = 'all';
         let focusPoint = null;
+        let searchName = null;
         let activeBay = null;
         let renderScheduled = false;
         let lastFetchTimestamp = null;
@@ -682,6 +754,11 @@
         }
 
         // --- Worker Message Handling ---
+        function resetReloadButton() {
+            document.getElementById('btn-reload').disabled = false;
+            document.getElementById('reload-icon').style.animation = '';
+        }
+
         worker.onmessage = async (e) => {
             const { type, ...payload } = e.data;
             if (type === 'status') {
@@ -692,7 +769,7 @@
                 allFeatures = payload.features;
                 lastFetchTimestamp = Date.now();
                 isReloading = false;
-                document.getElementById('btn-reload').disabled = false;
+                resetReloadButton();
                 updateStalenessBadge();
                 hideError();
                 document.getElementById('loading-overlay').style.opacity = '0';
@@ -701,10 +778,40 @@
                 scheduleRender();
             } else if (type === 'error') {
                 isReloading = false;
-                document.getElementById('btn-reload').disabled = false;
+                resetReloadButton();
                 showError(payload.message, () => worker.postMessage({ type: 'reload-sensors' }));
             }
         };
+
+        // --- Loading Screen Quotes ---
+        const costanzaQuotes = [
+            "Is that parking spot taken, or is it just resting?",
+            "I was in the parking lot!",
+            "The pump is not a pump!",
+            "You know, I always wanted to park at that spot.",
+            "It's not a lie if you believe it.",
+            "George is getting upset!",
+            "That's going to leave a mark.",
+            "The sea was angry that day, my friends.",
+            "I'm disturbed, I'm depressed, I'm inadequate. I've got it all!",
+            "These pretzels are making me thirsty.",
+            "You want to get nuts? Let's get nuts!",
+            "I'm Victoria's Secret model. Well, not exactly.",
+            "Was that wrong? Should I have not done that?",
+            "I think you might be overdoing it.",
+            "It moved!",
+            "I've become physically attracted to the parking sensor.",
+            "She was a great woman. She could spot a free park from across the lot.",
+            "I'm the master of my domain.",
+            "Serenity now!",
+            "The rubber band ball is not a toy!",
+            "These are the people, and I'm one of them."
+        ];
+
+        function showRandomQuote() {
+            const el = document.getElementById('loading-quote');
+            if (el) el.textContent = costanzaQuotes[Math.floor(Math.random() * costanzaQuotes.length)];
+        }
 
         async function init() {
             const cachedBays = await getCached('bays');
@@ -772,53 +879,53 @@
                     if (f.geometry && f.geometry.type !== 'Point') {
                         try {
                             const geoJsonLayer = L.geoJSON(f.geometry, {
-                                style: { 
-                                    color: 'white', 
-                                    weight: 1, 
-                                    fillColor: getStatusColor(f.status), 
-                                    fillOpacity: 0.7 
-                                },
+                    style: { 
+                        color: 'white', 
+                        weight: 2, 
+                        fillColor: getStatusColor(f.status), 
+                        fillOpacity: 0.75 
+                    },
                                 onEachFeature: (feature, lyr) => {
                                     lyr.on('click', () => selectBay(f));
                                 }
                             });
                             parkingLayer.addLayer(geoJsonLayer);
-                        } catch(e) {}
+                        } catch(e) { console.warn('GeoJSON render fallback:', e.message); }
                     } else {
                         // Fallback to circle marker if no polygon
-                        const marker = L.circleMarker(L.latLng(f.centroid), {
-                            radius: 8,
-                            color: 'white',
-                            weight: 1,
-                            fillColor: getStatusColor(f.status),
-                            fillOpacity: 0.9
-                        });
+                const marker = L.circleMarker(L.latLng(f.centroid), {
+                    radius: 10,
+                    color: 'white',
+                    weight: 2,
+                    fillColor: getStatusColor(f.status),
+                    fillOpacity: 0.9
+                });
                         marker.on('click', () => selectBay(f));
                         parkingLayer.addLayer(marker);
                     }
                     
                     // Render Text Label (Code Pill)
                     if (f.centroid) {
-                        const label = L.marker(f.centroid, {
-                            icon: L.divIcon({
-                                className: 'bay-label-container',
-                                html: '<div class="bay-label" style="background-color:' + getStatusColor(f.status) + '">' + escapeHtml(activeCode) + '</div>',
-                                iconSize: [30, 16],
-                                iconAnchor: [15, 8]
-                            }),
+                const label = L.marker(f.centroid, {
+                    icon: L.divIcon({
+                        className: 'bay-label-container',
+                        html: '<div class="bay-label" style="background-color:' + getStatusColor(f.status) + '">' + escapeHtml(activeCode) + '</div>',
+                        iconSize: [36, 18],
+                        iconAnchor: [18, 9]
+                    }),
                             interactive: false // Clicks fall through to polygon
                         });
                         parkingLayer.addLayer(label);
                     }
                 } else {
                     // Zoomed out: Render simple dots (highly performant)
-                    const marker = L.circleMarker(L.latLng(f.centroid), {
-                        radius: 4,
-                        color: 'white',
-                        weight: 1,
-                        fillColor: getStatusColor(f.status),
-                        fillOpacity: 0.8
-                    });
+            const marker = L.circleMarker(L.latLng(f.centroid), {
+                radius: 6,
+                color: 'white',
+                weight: 2,
+                fillColor: getStatusColor(f.status),
+                fillOpacity: 0.9
+            });
                     marker.on('click', () => selectBay(f));
                     parkingLayer.addLayer(marker);
                 }
@@ -830,17 +937,17 @@
             activeBay = f;
             
             focusLayer.clearLayers();
-            if (f.centroid) {
-                L.marker(f.centroid, {
-                    icon: L.divIcon({
-                        className: 'active-marker-icon',
-                        html: '<div style="position:relative;"><div class="active-marker-pulse"></div></div>',
-                        iconSize: [16, 16],
-                        iconAnchor: [8, 8]
-                    }),
-                    interactive: false
-                }).addTo(focusLayer);
-            }
+    if (f.centroid) {
+        L.marker(f.centroid, {
+            icon: L.divIcon({
+                className: 'active-marker-icon',
+                html: '<div style="position:relative;"><div class="active-marker-pulse"></div></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            }),
+            interactive: false
+        }).addTo(focusLayer);
+    }
 
             if (f.centroid) {
                 const targetPoint = map.project(L.latLng(f.centroid), map.getZoom()).subtract([0, 120]);
@@ -849,6 +956,7 @@
             }
 
             document.getElementById('view-overview').classList.add('hidden');
+            document.getElementById('view-search').classList.add('hidden');
             document.getElementById('view-details').classList.remove('hidden');
             document.getElementById('view-details').classList.add('view-transition');
             
@@ -864,17 +972,34 @@
             activeBay = null;
             focusLayer.clearLayers();
             if (focusPoint) {
-                 L.circleMarker(focusPoint, { radius: 8, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.5, weight: 2 }).addTo(focusLayer);
+                 L.circleMarker(focusPoint, { radius: 10, color: '#57534e', fillColor: '#57534e', fillOpacity: 0.6, weight: 2.5 }).addTo(focusLayer);
             }
             document.getElementById('view-details').classList.add('hidden');
+            
+            if (searchName) {
+                document.getElementById('view-search').classList.remove('hidden');
+                document.getElementById('view-search').classList.add('view-transition');
+            } else {
+                document.getElementById('view-overview').classList.remove('hidden');
+                document.getElementById('view-overview').classList.add('view-transition');
+                updateNearbyList();
+            }
+        }
+
+        function backFromSearch() {
+            searchName = null;
+            focusPoint = null;
+            focusLayer.clearLayers();
+            document.getElementById('view-search').classList.add('hidden');
             document.getElementById('view-overview').classList.remove('hidden');
             document.getElementById('view-overview').classList.add('view-transition');
+            updateNearbyList();
         }
 
         function updateDetailsView(f) {
-            document.getElementById('details-status-time').innerText = 'Updated ' + formatDateTime(f.lastupdated);
+            document.getElementById('details-status-time').innerText = 'Updated ' + formatDateTime(f.status_timestamp);
             
-            let distHtml = focusPoint ? '<div class="text-sm text-blue-600 font-semibold mb-3 flex items-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>' + map.distance(focusPoint, L.latLng(f.centroid)).toFixed(0) + ' m away</div>' : '';
+            let distHtml = focusPoint ? '<div class="text-sm text-stone-700 font-semibold mb-3 flex items-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>' + map.distance(focusPoint, L.latLng(f.centroid)).toFixed(0) + ' m away</div>' : '';
 
             const melbTime = getMelbourneTimeData();
             let activeRestriction = null;
@@ -886,55 +1011,85 @@
             });
 
             let restrictionsHtml = '';
+            const hasRestrictions = f.restrictions && f.restrictions.length > 0;
+            
             if (activeRestriction) {
                 restrictionsHtml += `
-                    <div class="p-4 bg-blue-50 rounded-2xl border border-blue-200">
+                    <div class="p-4 bg-stone-50 rounded-2xl border border-stone-200">
                         <div class="flex items-center mb-2">
-                            <span class="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Active Now</span>
+                            <span class="px-2 py-0.5 bg-stone-700 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Active Now</span>
                         </div>
-                        <div class="text-base font-bold text-gray-800">${escapeHtml(activeRestriction.structured)}</div>
-                        <div class="text-xs text-gray-500 mt-1">${escapeHtml(activeRestriction.description)}</div>
+                        <div class="text-sm font-bold text-gray-800 leading-snug">${escapeHtml(activeRestriction.structured)}</div>
+                        <div class="text-xs text-gray-500 mt-1.5 leading-relaxed">${escapeHtml(activeRestriction.description)}</div>
                     </div>
                 `;
-            } else {
+            } else if (hasRestrictions) {
                 restrictionsHtml += `
                     <div class="p-4 bg-green-50 rounded-2xl border border-green-200">
                         <div class="flex items-center mb-2">
                             <span class="px-2 py-0.5 bg-green-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Active Now</span>
                         </div>
-                        <div class="text-base font-bold text-gray-800">Unrestricted</div>
-                        <div class="text-xs text-gray-500 mt-1">No active time-based restrictions right now.</div>
+                        <div class="text-sm font-bold text-gray-800 leading-snug">No active restrictions</div>
+                        <div class="text-xs text-gray-500 mt-1.5 leading-relaxed">Restrictions exist for this zone but none apply right now.</div>
+                    </div>
+                `;
+            } else {
+                restrictionsHtml += `
+                    <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200">
+                        <div class="flex items-center mb-2">
+                            <span class="px-2 py-0.5 bg-amber-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">Unknown</span>
+                        </div>
+                        <div class="text-sm font-bold text-gray-800 leading-snug">Restrictions unknown</div>
+                        <div class="text-xs text-gray-500 mt-1.5 leading-relaxed">No restriction data available for this zone. Check signage in person.</div>
                     </div>
                 `;
             }
 
             if (otherRestrictions.length > 0) {
-                restrictionsHtml += '<div class="mt-4"><h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Other Times</h3><div class="space-y-2">';
+                restrictionsHtml += '<div class="mt-4"><h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Other Times</h3><div class="space-y-2">';
                 otherRestrictions.forEach(r => {
                     restrictionsHtml += `
                         <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                            <div class="text-sm font-semibold text-gray-700">${escapeHtml(r.structured)}</div>
-                            <div class="text-xs text-gray-400 mt-0.5">${escapeHtml(r.description)}</div>
+                            <div class="text-sm font-semibold text-gray-700 leading-snug">${escapeHtml(r.structured)}</div>
+                            <div class="text-xs text-gray-400 mt-1 leading-relaxed">${escapeHtml(r.description)}</div>
                         </div>
                     `;
                 });
                 restrictionsHtml += '</div></div>';
             }
 
+            let staleWarningHtml = '';
+            if (f.status_timestamp) {
+                const ageMs = Date.now() - new Date(f.status_timestamp).getTime();
+                const ageHours = ageMs / (1000 * 60 * 60);
+                if (ageHours > 4) {
+                    const ageText = ageHours < 24 ? Math.round(ageHours) + 'h ago' : Math.round(ageHours / 24) + 'd ago';
+                    staleWarningHtml = `<div class="flex items-center space-x-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs font-medium mb-4">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+                        <span>Sensor data is ${ageText} old — may not reflect current status.</span>
+                    </div>`;
+                }
+            }
+
             document.getElementById('details-content').innerHTML = `
                 <div>
-                    <h2 class="text-xl font-bold text-gray-800 leading-tight">${escapeHtml(f.roadSegment)}</h2>
-                    <div class="mt-2 mb-4 flex items-center space-x-3">
-                        <span class="px-3 py-1 rounded-full text-xs font-bold text-white ${f.status === 'free' ? 'bg-green-500' : f.status === 'occupied' ? 'bg-red-500' : 'bg-gray-400'}">${f.status.toUpperCase()}</span>
-                        <span class="text-xs text-gray-500 font-medium">Bay ID: ${escapeHtml(f.bayId)} ${f.zoneNumber ? '• Zone: ' + escapeHtml(f.zoneNumber) : ''}</span>
+                    <h2 class="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 leading-tight tracking-tight">${escapeHtml(f.roadSegment)}</h2>
+                    <div class="mt-3 mb-4 flex flex-wrap items-center gap-2">
+                        <span class="px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold text-white tracking-wide whitespace-nowrap ${f.status === 'free' ? 'bg-green-500' : f.status === 'occupied' ? 'bg-red-500' : 'bg-gray-500'}">${f.status === 'unknown' ? 'STATUS UNKNOWN' : f.status.toUpperCase()}</span>
+                        <span class="text-[10px] sm:text-[11px] text-gray-500 font-medium tracking-wide whitespace-nowrap">Bay ID: ${escapeHtml(f.bayId)} ${f.zoneNumber ? '• Zone: ' + escapeHtml(f.zoneNumber) : ''}</span>
                     </div>
+                    ${staleWarningHtml}
+                    ${f.centroid ? `<a href="https://www.google.com/maps/dir/?api=1&destination=${f.centroid[0]},${f.centroid[1]}" target="_blank" rel="noopener" class="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-stone-700 text-white text-xs sm:text-sm font-semibold active:scale-95 transition shadow-md shadow-stone-200 mb-4">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                        <span>Open in Google Maps</span>
+                    </a>` : ''}
                     ${distHtml}
                 </div>
                 <div>
-                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">Restrictions</h3>
+                    <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Restrictions</h3>
                     ${restrictionsHtml}
                 </div>
-                <div class="pt-2 text-center text-xs text-gray-400 italic">Sensor status shows vehicle presence only. Always verify via street signs.</div>
+                <div class="pt-3 mt-2 text-center text-[10px] sm:text-[11px] text-gray-500 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100 leading-relaxed">Sensor status shows vehicle presence only. Always verify via street signs.</div>
             `;
         }
 
@@ -965,7 +1120,7 @@
                 .sort((a, b) => a.dist - b.dist);
             
             if (nearby.length === 0) {
-                list.innerHTML = '<div class="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-xl">No bays found within 600m</div>';
+                list.innerHTML = '<div class="text-[11px] text-gray-500 text-center py-6 bg-gray-50 rounded-xl">No bays found within 600m</div>';
                 return;
             }
             
@@ -975,12 +1130,12 @@
                 div.className = 'p-3 rounded-xl bg-white border border-gray-100 active:bg-gray-50 cursor-pointer transition flex justify-between items-center';
                 div.innerHTML = `
                     <div class="flex-1 min-w-0 mr-3">
-                        <div class="text-sm font-semibold text-gray-800 truncate">${escapeHtml(f.roadSegment)}</div>
-                        <div class="text-xs text-gray-500 truncate mt-0.5">${escapeHtml(summary)}</div>
+                        <div class="text-sm font-semibold text-gray-800 truncate leading-snug">${escapeHtml(f.roadSegment)}</div>
+                        <div class="text-[11px] text-gray-500 truncate mt-1 leading-relaxed">${escapeHtml(summary)}</div>
                     </div>
                     <div class="text-right flex-shrink-0">
-                        <div class="text-xs font-bold ${f.status === 'free' ? 'text-green-600' : f.status === 'occupied' ? 'text-red-600' : 'text-gray-500'}">${f.dist.toFixed(0)}m</div>
-                        <div class="text-[10px] uppercase font-semibold ${f.status === 'free' ? 'text-green-500' : f.status === 'occupied' ? 'text-red-500' : 'text-gray-400'} mt-0.5">${f.status}</div>
+                        <div class="text-[11px] font-bold tabular-nums ${f.status === 'free' ? 'text-green-600' : f.status === 'occupied' ? 'text-red-600' : 'text-gray-500'}">${f.dist.toFixed(0)}m</div>
+                        <div class="text-[10px] uppercase font-semibold tracking-wide ${f.status === 'free' ? 'text-green-500' : f.status === 'occupied' ? 'text-red-500' : 'text-gray-400'} mt-0.5">${f.status}</div>
                     </div>
                 `;
                 div.addEventListener('click', () => selectBay(f));
@@ -1001,6 +1156,7 @@
         });
 
         document.getElementById('btn-back').addEventListener('click', backToOverview);
+        document.getElementById('btn-search-back').addEventListener('click', backFromSearch);
 
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1015,6 +1171,7 @@
             if (isReloading) return;
             isReloading = true;
             document.getElementById('btn-reload').disabled = true;
+            document.getElementById('reload-icon').style.animation = 'spin 0.8s linear infinite';
             worker.postMessage({ type: 'reload-sensors' });
         });
 
@@ -1026,21 +1183,77 @@
             }
         });
 
-        document.getElementById('btn-clear').addEventListener('click', () => {
-            focusPoint = null;
-            focusLayer.clearLayers();
-            updateNearbyList();
-        });
 
-        function setFocusPoint(lat, lon) {
+        function setFocusPoint(lat, lon, name) {
             focusPoint = L.latLng(lat, lon);
+            searchName = name || null;
             focusLayer.clearLayers();
-            L.circleMarker(focusPoint, { radius: 8, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.5, weight: 2 }).addTo(focusLayer);
+            L.circleMarker(focusPoint, { radius: 10, color: '#57534e', fillColor: '#57534e', fillOpacity: 0.6, weight: 2.5 }).addTo(focusLayer);
             map.flyTo(focusPoint, 18, { duration: 1 });
             
             if (activeBay) backToOverview();
             if (sheet.classList.contains('collapsed')) sheet.classList.replace('collapsed', 'expanded');
-            updateNearbyList();
+            
+            if (searchName) {
+                showSearchView();
+            } else {
+                updateNearbyList();
+            }
+        }
+
+        function showSearchView() {
+            document.getElementById('view-overview').classList.add('hidden');
+            document.getElementById('view-details').classList.add('hidden');
+            document.getElementById('view-search').classList.remove('hidden');
+            document.getElementById('view-search').classList.add('view-transition');
+            
+            const content = document.getElementById('search-location-content');
+            const nearby = allFeatures.filter(f => f.centroid && map.distance(focusPoint, L.latLng(f.centroid)) <= 600)
+                .map(f => ({ ...f, dist: map.distance(focusPoint, L.latLng(f.centroid)) }))
+                .sort((a, b) => a.dist - b.dist);
+            
+            let nearbyHtml = '';
+            if (nearby.length === 0) {
+                nearbyHtml = '<div class="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-xl">No bays found within 600m</div>';
+            } else {
+                nearbyHtml = '<div class="space-y-2">';
+                nearby.slice(0, 15).forEach(f => {
+                    const summary = f.restrictions[0] ? f.restrictions[0].structured.split(' • ').slice(0, 2).join(' ') : 'Parking Bay';
+                    nearbyHtml += `
+                        <div class="p-3 rounded-xl bg-white border border-gray-100 active:bg-gray-50 cursor-pointer transition flex justify-between items-center" data-bay-id="${escapeHtml(f.bayId)}">
+                            <div class="flex-1 min-w-0 mr-3">
+                                <div class="text-sm font-semibold text-gray-800 truncate">${escapeHtml(f.roadSegment)}</div>
+                                <div class="text-xs text-gray-500 truncate mt-0.5">${escapeHtml(summary)}</div>
+                            </div>
+                            <div class="text-right flex-shrink-0">
+                                <div class="text-xs font-bold ${f.status === 'free' ? 'text-green-600' : f.status === 'occupied' ? 'text-red-600' : 'text-gray-500'}">${f.dist.toFixed(0)}m</div>
+                                <div class="text-[10px] uppercase font-semibold ${f.status === 'free' ? 'text-green-500' : f.status === 'occupied' ? 'text-red-500' : 'text-gray-400'} mt-0.5">${f.status}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                nearbyHtml += '</div>';
+            }
+            
+            content.innerHTML = `
+                <div class="p-4 bg-stone-50 rounded-2xl border border-stone-200">
+                    <div class="flex items-center mb-2 min-w-0">
+                        <svg class="w-5 h-5 mr-2 text-stone-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span class="text-sm font-bold text-gray-800 leading-snug truncate">${escapeHtml(searchName)}</span>
+                    </div>
+                    <div class="text-[11px] text-gray-500 font-medium tracking-wide tabular-nums">${focusPoint.lat.toFixed(4)}, ${focusPoint.lng.toFixed(4)}</div>
+                </div>
+                <div>
+                    <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Nearby Parking</h3>
+                    <div class="text-[10px] text-gray-500 mb-3">Within 600m • ${nearby.length} bays found</div>
+                    ${nearbyHtml}
+                </div>
+            `;
+            
+            content.querySelectorAll('[data-bay-id]').forEach(el => {
+                const bay = nearby.find(f => f.bayId === el.dataset.bayId);
+                if (bay) el.addEventListener('click', () => selectBay(bay));
+            });
         }
 
         let searchTimeout, searchAbort;
@@ -1071,7 +1284,7 @@
                     document.getElementById('search-input').setAttribute('aria-expanded', 'true');
                     resultsDiv.querySelectorAll('div[data-lat]').forEach(el => {
                         el.addEventListener('click', () => {
-                            setFocusPoint(parseFloat(el.dataset.lat), parseFloat(el.dataset.lon));
+                            setFocusPoint(parseFloat(el.dataset.lat), parseFloat(el.dataset.lon), el.textContent.trim());
                             resultsDiv.classList.add('hidden');
                             document.getElementById('search-input').setAttribute('aria-expanded', 'false');
                             document.getElementById('search-input').value = '';
@@ -1195,6 +1408,9 @@
         });
 
         init();
+        showRandomQuote();
+        document.getElementById('loading-logo').innerHTML = costanzaSvg();
+        document.getElementById('title-logo').innerHTML = costanzaSvg();
     </script>
 </body>
 </html>
