@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-05T03:00:00Z",
+  "title": "Design System: Costanza Carpark",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Warm Stone",
+        "canonical": "#57534e",
+        "tonalRamp": ["#1c1917", "#292524", "#44403c", "#57534e", "#78716c", "#a8a29e", "#d6d3d1", "#e7e5e4", "#f5f5f4"]
+      },
+      "success": {
+        "role": "success",
+        "displayName": "Parking Free",
+        "canonical": "#10b981",
+        "tonalRamp": ["#064E3B", "#065F46", "#047857", "#059669", "#10b981", "#34D399", "#6EE7B7", "#A7F3D0", "#D1FAE5"]
+      },
+      "danger": {
+        "role": "danger",
+        "displayName": "Parking Occupied",
+        "canonical": "#ef4444",
+        "tonalRamp": ["#7F1D1D", "#991B1B", "#B91C1C", "#DC2626", "#EF4444", "#F87171", "#FCA5A5", "#FECACA", "#FEE2E2"]
+      },
+      "warning": {
+        "role": "warning",
+        "displayName": "Data Stale",
+        "canonical": "#f59e0b",
+        "tonalRamp": ["#78350F", "#92400E", "#B45309", "#D97706", "#F59E0B", "#FBBF24", "#FCD34D", "#FDE68A", "#FEF3C7"]
+      }
+    },
+    "typographyMeta": {
+      "stat": { "displayName": "Stat Number", "purpose": "Large numerical displays in stat cards." },
+      "heading-lg": { "displayName": "Heading Large", "purpose": "Bay detail road segment name." },
+      "heading": { "displayName": "Heading", "purpose": "Bottom sheet title." },
+      "body-lg": { "displayName": "Body Large", "purpose": "Restriction detail text, bay detail content." },
+      "body-md": { "displayName": "Body Medium", "purpose": "Error banner text, secondary detail text." },
+      "label": { "displayName": "Label", "purpose": "Button text, badge text, filter buttons." },
+      "label-sm": { "displayName": "Label Small", "purpose": "Stat card labels, badges, uppercase micro text." },
+      "bay-label": { "displayName": "Bay Label", "purpose": "Restriction code pills on map markers." },
+      "body": { "displayName": "Body", "purpose": "Base body text, inputs." }
+    },
+    "shadows": [
+      { "name": "glass-panel", "value": "0 8px 32px rgba(0, 0, 0, 0.12)", "purpose": "Ambient depth for floating glass panels (bottom sheet, search, error banner)." },
+      { "name": "card-hover", "value": "0 4px 16px rgba(0, 0, 0, 0.1)", "purpose": "Lighter lift for transient elements (error banner states)." },
+      { "name": "bay-label", "value": "0 1px 3px rgba(0, 0, 0, 0.3)", "purpose": "Tight shadow for map marker definition." }
+    ],
+    "motion": [
+      { "name": "ease-sheet", "value": "cubic-bezier(0.32, 0.72, 0, 1)", "purpose": "Bottom sheet snap animation — decelerating ease-out." },
+      { "name": "ease-banner", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Error banner slide-in — fast deceleration." },
+      { "name": "ease-standard", "value": "ease-out", "purpose": "View transitions, general UI motion." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "btn-primary",
+      "description": "Main action button (Reload Sensors). Full-width, Warm Stone background.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15\"></path></svg> Reload Sensors</button>",
+      "css": ".ds-btn-primary { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 0; background: #57534e; color: #fff; font-family: Inter, system-ui, sans-serif; font-size: 14px; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(87, 83, 78, 0.3); transition: transform 0.15s, opacity 0.15s; } .ds-btn-primary:hover { opacity: 0.95; } .ds-btn-primary:active { transform: scale(0.95); } .ds-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "btn-secondary",
+      "description": "Secondary action (Clear). Gray background, next to primary button.",
+      "html": "<button class=\"ds-btn-secondary\">Clear</button>",
+      "css": ".ds-btn-secondary { padding: 12px 16px; background: #e5e7eb; color: #374151; font-family: Inter, system-ui, sans-serif; font-size: 14px; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.15s; } .ds-btn-secondary:active { transform: scale(0.95); }"
+    },
+    {
+      "name": "Filter Button",
+      "kind": "button",
+      "refersTo": "filter-btn",
+      "description": "Map filter toggle (All / Free / Taken). Segmented control style.",
+      "html": "<button class=\"ds-filter-btn\">All</button>",
+      "css": ".ds-filter-btn { flex: 1; padding: 10px 0; background: #f3f4f6; color: #4b5563; font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.15s, background 0.2s, color 0.2s; } .ds-filter-btn:hover { background: #e5e7eb; } .ds-filter-btn:active { transform: scale(0.95); } .ds-filter-btn.active { background: #1f2937; color: #fff; }"
+    },
+    {
+      "name": "Stat Card",
+      "kind": "card",
+      "refersTo": "stat-card",
+      "description": "Numerical stat display (Total, Free, Taken, Visible). 4-column grid item.",
+      "html": "<div class=\"ds-stat-card\"><div class=\"ds-stat-number\">0</div><div class=\"ds-stat-label\">Total</div></div>",
+      "css": ".ds-stat-card { background: #f9fafb; border: 1px solid #f3f4f6; border-radius: 12px; padding: 8px; text-align: center; } .ds-stat-number { font-family: Inter, system-ui, sans-serif; font-size: 24px; font-weight: 700; color: #1f2937; } .ds-stat-label { font-family: Inter, system-ui, sans-serif; font-size: 10px; font-weight: 500; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; } .ds-stat-card.free { background: #ecfdf5; border-color: #d1fae5; } .ds-stat-card.free .ds-stat-number { color: #10b981; } .ds-stat-card.free .ds-stat-label { color: #34D399; } .ds-stat-card.occupied { background: #fef2f2; border-color: #fecaca; } .ds-stat-card.occupied .ds-stat-number { color: #ef4444; } .ds-stat-card.occupied .ds-stat-label { color: #F87171; } .ds-stat-card.visible { background: #f5f5f4; border-color: #e7e5e4; } .ds-stat-card.visible .ds-stat-number { color: #57534e; } .ds-stat-card.visible .ds-stat-label { color: #78716c; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "search-input",
+      "description": "Address search bar. Full-width pill, glass background, stone focus ring.",
+      "html": "<input class=\"ds-search-input\" type=\"text\" placeholder=\"Search address in Melbourne...\">",
+      "css": ".ds-search-input { width: 100%; padding: 12px 20px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); color: #1f2937; font-family: Inter, system-ui, sans-serif; font-size: 16px; border: none; border-radius: 9999px; outline: none; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); transition: box-shadow 0.2s; } .ds-search-input::placeholder { color: #9ca3af; } .ds-search-input:focus { box-shadow: 0 0 0 2px #57534e, 0 2px 8px rgba(0, 0, 0, 0.08); }"
+    },
+    {
+      "name": "Staleness Badge",
+      "kind": "chip",
+      "refersTo": "staleness-badge",
+      "description": "Data age indicator. Green/amber/red dot with label.",
+      "html": "<div class=\"ds-staleness-badge fresh\"><span class=\"ds-dot\"></span><span>Updated just now</span></div>",
+      "css": ".ds-staleness-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 9999px; font-family: Inter, system-ui, sans-serif; font-size: 10px; font-weight: 600; transition: all 0.3s; } .ds-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; } .ds-staleness-badge.fresh { background: #ecfdf5; color: #57534e; } .ds-staleness-badge.fresh .ds-dot { background: #10b981; } .ds-staleness-badge.stale { background: #fffbeb; color: #92400e; } .ds-staleness-badge.stale .ds-dot { background: #f59e0b; animation: ds-pulse 1.5s infinite; } .ds-staleness-badge.old { background: #fef2f2; color: #991b1b; } .ds-staleness-badge.old .ds-dot { background: #ef4444; animation: ds-pulse 1s infinite; } @keyframes ds-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }"
+    },
+    {
+      "name": "Error Banner",
+      "kind": "custom",
+      "refersTo": "error-banner",
+      "description": "Transient error/warning notification with optional retry action.",
+      "html": "<div class=\"ds-error-banner error\"><svg width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z\"></path></svg><span>Error message</span><button class=\"ds-retry-btn\">Retry</button></div>",
+      "css": ".ds-error-banner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 500; } .ds-error-banner.error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; } .ds-error-banner.warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; } .ds-retry-btn { margin-left: auto; padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; color: #fff; } .ds-error-banner.error .ds-retry-btn { background: #dc2626; } .ds-error-banner.warn .ds-retry-btn { background: #d97706; } .ds-retry-btn:hover { opacity: 0.9; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Transparent Commute",
+    "overview": "A glassmorphism utility layer that floats over live map data. The interface is translucent — panels blur the map behind them, creating depth without occlusion. Nothing is hidden; the data is always visible, always current. The design language is calm, functional, and distinctly Melbourne: the primary action color is Warm Stone, a neutral that recedes from the map while maintaining clear affordances.\n\nThe system is built for stressed commuters making fast decisions. Every element earns its pixel: status colors carry meaning (green = free, red = occupied), progressive disclosure hides complexity until needed, and the bottom sheet pattern keeps primary actions within thumb reach.",
+    "keyCharacteristics": [
+      "Glassmorphism panels with backdrop-filter blur over live map",
+      "Status-driven color coding: green = free, red = occupied, gray = unknown",
+      "Warm Stone (#57534e) as the neutral primary accent — recedes from the map",
+      "Bottom sheet with swipe gesture for mobile-first interaction",
+      "Progressive disclosure: overview → detail, always one view at a time",
+      "Real-time staleness awareness via color-coded badge"
+    ],
+    "rules": [
+      { "name": "The Status Color Rule", "body": "Green, red, and gray are reserved exclusively for parking bay status on the map. They are never used for buttons, text emphasis, or decorative purposes.", "section": "colors" },
+      { "name": "The 16px Floor Rule", "body": "All input text is 16px minimum. iOS Safari auto-zooms focused inputs under 16px, breaking form layouts.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest. Shadows appear only for floating glass panels and map markers.", "section": "elevation" },
+      { "name": "The No-Sharp-Corners Rule", "body": "Every container, button, badge, and card has a minimum 4px radius.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do use status colors (green/red/gray) exclusively for parking bay status on the map.",
+      "Do keep the glass panels translucent — the map should always be partially visible behind UI.",
+      "Do use the bottom sheet pattern for mobile-primary interactions.",
+      "Do force 16px font-size on all inputs to prevent iOS auto-zoom.",
+      "Do show data staleness via the badge — users must know how old the data is.",
+      "Do use active:scale-95 for touch feedback on buttons."
+    ],
+    "donts": [
+      "Don't use green, red, or gray for anything other than parking status.",
+      "Don't add opaque backgrounds to floating panels — transparency is core to the system.",
+      "Don't use sharp corners on any element (minimum 4px radius).",
+      "Don't auto-refresh data — the user controls refresh via the Reload button.",
+      "Don't show more than one view in the bottom sheet at a time (overview OR detail, never both).",
+      "Don't add decorative shadows to flat elements — shadows are reserved for floating glass panels."
+    ]
+  }
+}
