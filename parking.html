@@ -262,16 +262,16 @@
 
     <!-- Bottom Sheet -->
     <div id="bottom-sheet" class="collapsed glass">
-    <div id="sheet-handle" class="pt-2 pb-4 cursor-pointer flex justify-center flex-shrink-0 -mb-2">
-        <div class="w-12 h-1.5 bg-gray-400 rounded-full"></div>
+    <div id="sheet-handle" class="pt-1 pb-3 cursor-pointer flex justify-center flex-shrink-0">
+        <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
     </div>
         
         <!-- View 1: Overview -->
         <div id="view-overview" class="sheet-content px-5">
-            <div class="flex items-center justify-between mb-3 mt-1">
+            <div class="flex items-center justify-between h-11 mb-3">
                 <div class="flex items-center space-x-2.5 min-w-0">
-                    <span id="title-logo" class="w-6"></span>
-                    <h1 class="text-lg sm:text-lg font-bold text-gray-800 tracking-tight truncate">Costanza Carpark</h1>
+                    <span id="title-logo" class="w-6 flex-shrink-0"></span>
+                    <h1 class="text-lg font-bold text-gray-800 tracking-tight truncate">Costanza Carpark</h1>
                 </div>
                 <div class="flex items-center space-x-2">
                     <div id="staleness-badge" class="fresh" style="visibility:hidden">
@@ -290,27 +290,27 @@
             <button data-filter="occupied" class="filter-btn flex-1 py-3 rounded-xl text-xs font-bold tracking-wide bg-gray-100 text-gray-600 active:scale-95 transition">Taken</button>
         </div>
 
-        <div class="grid grid-cols-4 gap-2 text-center mb-4">
-            <div class="bg-gray-50 rounded-xl p-2 sm:p-2.5 border border-gray-100">
-                <div id="stat-total" class="text-xl sm:text-2xl font-bold text-gray-800 tabular-nums leading-none mb-1">0</div>
-                <div class="text-[9px] sm:text-[10px] text-gray-500 font-medium uppercase tracking-wider">Total</div>
+        <div class="grid grid-cols-4 gap-2 text-center mb-3">
+            <div class="bg-gray-50 rounded-xl p-2 border border-gray-100">
+                <div id="stat-total" class="text-xl font-bold text-gray-800 tabular-nums leading-none mb-1">0</div>
+                <div class="text-[9px] text-gray-500 font-medium uppercase tracking-wider">Total</div>
             </div>
-            <div class="bg-green-50 rounded-xl p-2 sm:p-2.5 border border-green-100">
-                <div id="stat-free" class="text-xl sm:text-2xl font-bold text-green-600 tabular-nums leading-none mb-1">0</div>
-                <div class="text-[9px] sm:text-[10px] text-green-500 font-medium uppercase tracking-wider">Free</div>
+            <div class="bg-green-50 rounded-xl p-2 border border-green-100">
+                <div id="stat-free" class="text-xl font-bold text-green-600 tabular-nums leading-none mb-1">0</div>
+                <div class="text-[9px] text-green-500 font-medium uppercase tracking-wider">Free</div>
             </div>
-            <div class="bg-red-50 rounded-xl p-2 sm:p-2.5 border border-red-100">
-                <div id="stat-occupied" class="text-xl sm:text-2xl font-bold text-red-600 tabular-nums leading-none mb-1">0</div>
-                <div class="text-[9px] sm:text-[10px] text-red-500 font-medium uppercase tracking-wider">Taken</div>
+            <div class="bg-red-50 rounded-xl p-2 border border-red-100">
+                <div id="stat-occupied" class="text-xl font-bold text-red-600 tabular-nums leading-none mb-1">0</div>
+                <div class="text-[9px] text-red-500 font-medium uppercase tracking-wider">Taken</div>
             </div>
-            <div class="bg-stone-50 rounded-xl p-2 sm:p-2.5 border border-stone-100">
-                <div id="stat-visible" class="text-xl sm:text-2xl font-bold text-stone-700 tabular-nums leading-none mb-1">0</div>
-                <div class="text-[9px] sm:text-[10px] text-stone-600 font-medium uppercase tracking-wider">Visible</div>
+            <div class="bg-stone-50 rounded-xl p-2 border border-stone-100">
+                <div id="stat-visible" class="text-xl font-bold text-stone-700 tabular-nums leading-none mb-1">0</div>
+                <div class="text-[9px] text-stone-600 font-medium uppercase tracking-wider">Visible</div>
             </div>
         </div>
             
             <div id="nearby-panel" class="pb-4 hidden">
-                <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wider mb-2 flex items-center justify-between">
+                <h2 class="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                     <span>Nearby Parking</span>
                     <span class="text-[10px] text-gray-500 font-normal normal-case tracking-normal bg-gray-100 px-2 py-1 rounded-full">600m radius</span>
                 </h2>
@@ -320,26 +320,26 @@
 
         <!-- View 2: Bay Details -->
         <div id="view-details" class="sheet-content px-5 hidden">
-            <div class="flex justify-between items-center mb-4 mt-1">
+            <div class="flex justify-between items-center h-11 mb-3">
                 <button id="btn-back" class="flex items-center text-stone-700 text-sm font-semibold active:scale-95 transition">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     Back
                 </button>
                 <div id="details-status-time" class="text-xs text-gray-500 font-medium"></div>
             </div>
-            <div id="details-content" class="space-y-4"></div>
+            <div id="details-content" class="space-y-3"></div>
         </div>
 
         <!-- View 3: Search Location -->
         <div id="view-search" class="sheet-content px-5 hidden">
-            <div class="flex justify-between items-center mb-4 mt-1">
+            <div class="flex justify-between items-center h-11 mb-3">
                 <button id="btn-search-back" class="flex items-center text-stone-700 text-sm font-semibold active:scale-95 transition">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     Back
                 </button>
                 <div class="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Search Location</div>
             </div>
-            <div id="search-location-content" class="space-y-4"></div>
+            <div id="search-location-content" class="space-y-3"></div>
         </div>
     </div>
 
@@ -1073,13 +1073,13 @@
 
             document.getElementById('details-content').innerHTML = `
                 <div>
-                    <h2 class="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 leading-tight tracking-tight">${escapeHtml(f.roadSegment)}</h2>
+                    <h2 class="text-xl font-bold text-gray-800 leading-tight tracking-tight">${escapeHtml(f.roadSegment)}</h2>
                     <div class="mt-3 mb-4 flex flex-wrap items-center gap-2">
-                        <span class="px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold text-white tracking-wide whitespace-nowrap ${f.status === 'free' ? 'bg-green-500' : f.status === 'occupied' ? 'bg-red-500' : 'bg-gray-500'}">${f.status === 'unknown' ? 'STATUS UNKNOWN' : f.status.toUpperCase()}</span>
-                        <span class="text-[10px] sm:text-[11px] text-gray-500 font-medium tracking-wide whitespace-nowrap">Bay ID: ${escapeHtml(f.bayId)} ${f.zoneNumber ? '• Zone: ' + escapeHtml(f.zoneNumber) : ''}</span>
+                        <span class="px-3 py-1 rounded-full text-[11px] font-bold text-white tracking-wide whitespace-nowrap ${f.status === 'free' ? 'bg-green-500' : f.status === 'occupied' ? 'bg-red-500' : 'bg-gray-500'}">${f.status === 'unknown' ? 'STATUS UNKNOWN' : f.status.toUpperCase()}</span>
+                        <span class="text-[11px] text-gray-500 font-medium tracking-wide whitespace-nowrap">Bay ID: ${escapeHtml(f.bayId)} ${f.zoneNumber ? '• Zone: ' + escapeHtml(f.zoneNumber) : ''}</span>
                     </div>
                     ${staleWarningHtml}
-                    ${f.centroid ? `<a href="https://www.google.com/maps/dir/?api=1&destination=${f.centroid[0]},${f.centroid[1]}" target="_blank" rel="noopener" class="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-stone-700 text-white text-xs sm:text-sm font-semibold active:scale-95 transition shadow-md shadow-stone-200 mb-4">
+                    ${f.centroid ? `<a href="https://www.google.com/maps/dir/?api=1&destination=${f.centroid[0]},${f.centroid[1]}" target="_blank" rel="noopener" class="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-stone-700 text-white text-sm font-semibold active:scale-95 transition shadow-md shadow-stone-200 mb-4">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
                         <span>Open in Google Maps</span>
                     </a>` : ''}
@@ -1089,7 +1089,7 @@
                     <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Restrictions</h3>
                     ${restrictionsHtml}
                 </div>
-                <div class="pt-3 mt-2 text-center text-[10px] sm:text-[11px] text-gray-500 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100 leading-relaxed">Sensor status shows vehicle presence only. Always verify via street signs.</div>
+                <div class="pt-3 mt-2 text-center text-[11px] text-gray-500 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100 leading-relaxed">Sensor status shows vehicle presence only. Always verify via street signs.</div>
             `;
         }
 
