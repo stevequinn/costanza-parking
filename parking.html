@@ -156,6 +156,25 @@
             50% { opacity: 0.4; }
         }
 
+        /* Delight: Free bay celebration glow */
+        @keyframes free-glow {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 12px 4px rgba(16, 185, 129, 0.25); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .free-celebrate {
+            animation: free-glow 0.8s ease-out;
+        }
+
+        /* Delight: Staggered list entrance */
+        @keyframes list-enter {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .list-item-enter {
+            animation: list-enter 0.3s ease-out both;
+        }
+
         /* Error Banner */
         #error-banner {
             position: absolute;
@@ -1075,7 +1094,7 @@
                 <div>
                     <h2 class="text-xl font-bold text-gray-800 leading-tight tracking-tight">${escapeHtml(f.roadSegment)}</h2>
                     <div class="mt-3 mb-4 flex flex-wrap items-center gap-2">
-                        <span class="px-3 py-1 rounded-full text-[11px] font-bold text-white tracking-wide whitespace-nowrap ${f.status === 'free' ? 'bg-green-500' : f.status === 'occupied' ? 'bg-red-500' : 'bg-gray-500'}">${f.status === 'unknown' ? 'STATUS UNKNOWN' : f.status.toUpperCase()}</span>
+                        <span class="px-3 py-1 rounded-full text-[11px] font-bold text-white tracking-wide whitespace-nowrap ${f.status === 'free' ? 'bg-green-500 free-celebrate' : f.status === 'occupied' ? 'bg-red-500' : 'bg-gray-500'}">${f.status === 'unknown' ? 'STATUS UNKNOWN' : f.status.toUpperCase()}</span>
                         <span class="text-[11px] text-gray-500 font-medium tracking-wide whitespace-nowrap">Bay ID: ${escapeHtml(f.bayId)} ${f.zoneNumber ? '• Zone: ' + escapeHtml(f.zoneNumber) : ''}</span>
                     </div>
                     ${staleWarningHtml}
@@ -1093,13 +1112,27 @@
             `;
         }
 
+        function animateCounter(el, target, duration) {
+            const start = parseInt(el.innerText) || 0;
+            if (start === target) return;
+            const range = target - start;
+            const startTime = performance.now();
+            function step(now) {
+                const progress = Math.min((now - startTime) / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                el.innerText = Math.round(start + range * ease);
+                if (progress < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+
         function updateStats() {
             let total = allFeatures.length;
             let free = allFeatures.filter(f => f.status === 'free').length;
             let occupied = allFeatures.filter(f => f.status === 'occupied').length;
-            document.getElementById('stat-total').innerText = total;
-            document.getElementById('stat-free').innerText = free;
-            document.getElementById('stat-occupied').innerText = occupied;
+            animateCounter(document.getElementById('stat-total'), total, 600);
+            animateCounter(document.getElementById('stat-free'), free, 600);
+            animateCounter(document.getElementById('stat-occupied'), occupied, 600);
             updateNearbyList();
             updateStalenessBadge();
         }
@@ -1120,14 +1153,25 @@
                 .sort((a, b) => a.dist - b.dist);
             
             if (nearby.length === 0) {
-                list.innerHTML = '<div class="text-[11px] text-gray-500 text-center py-6 bg-gray-50 rounded-xl">No bays found within 600m</div>';
+                const emptyQuotes = [
+                    "I was in the parking lot! ...There is no parking lot.",
+                    "Serenity now... frustration later.",
+                    "The sea was angry that day, my friends. So were the parking sensors.",
+                    "These pretzels are making me thirsty. And this search is making me upset."
+                ];
+                const quote = emptyQuotes[Math.floor(Math.random() * emptyQuotes.length)];
+                list.innerHTML = `<div class="text-[11px] text-gray-500 text-center py-6 bg-gray-50 rounded-xl">
+                    <div class="mb-2">No bays found within 600m</div>
+                    <div class="text-[10px] text-gray-400 italic">"${quote}"</div>
+                </div>`;
                 return;
             }
             
-            nearby.slice(0, 15).forEach(f => {
+            nearby.slice(0, 15).forEach((f, i) => {
                 const summary = f.restrictions[0] ? f.restrictions[0].structured.split(' • ').slice(0, 2).join(' ') : 'Parking Bay';
                 const div = document.createElement('div');
-                div.className = 'p-3 rounded-xl bg-white border border-gray-100 active:bg-gray-50 cursor-pointer transition flex justify-between items-center';
+                div.className = 'p-3 rounded-xl bg-white border border-gray-100 active:bg-gray-50 cursor-pointer transition flex justify-between items-center list-item-enter';
+                div.style.animationDelay = `${i * 40}ms`;
                 div.innerHTML = `
                     <div class="flex-1 min-w-0 mr-3">
                         <div class="text-sm font-semibold text-gray-800 truncate leading-snug">${escapeHtml(f.roadSegment)}</div>
@@ -1214,13 +1258,23 @@
             
             let nearbyHtml = '';
             if (nearby.length === 0) {
-                nearbyHtml = '<div class="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-xl">No bays found within 600m</div>';
+                const emptyQuotes = [
+                    "I was in the parking lot! ...There is no parking lot.",
+                    "Serenity now... frustration later.",
+                    "The sea was angry that day, my friends. So were the parking sensors.",
+                    "These pretzels are making me thirsty. And this search is making me upset."
+                ];
+                const quote = emptyQuotes[Math.floor(Math.random() * emptyQuotes.length)];
+                nearbyHtml = `<div class="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-xl">
+                    <div class="mb-2">No bays found within 600m</div>
+                    <div class="text-xs text-gray-400 italic">"${quote}"</div>
+                </div>`;
             } else {
                 nearbyHtml = '<div class="space-y-2">';
-                nearby.slice(0, 15).forEach(f => {
+                nearby.slice(0, 15).forEach((f, i) => {
                     const summary = f.restrictions[0] ? f.restrictions[0].structured.split(' • ').slice(0, 2).join(' ') : 'Parking Bay';
                     nearbyHtml += `
-                        <div class="p-3 rounded-xl bg-white border border-gray-100 active:bg-gray-50 cursor-pointer transition flex justify-between items-center" data-bay-id="${escapeHtml(f.bayId)}">
+                        <div class="p-3 rounded-xl bg-white border border-gray-100 active:bg-gray-50 cursor-pointer transition flex justify-between items-center list-item-enter" style="animation-delay: ${i * 40}ms" data-bay-id="${escapeHtml(f.bayId)}">
                             <div class="flex-1 min-w-0 mr-3">
                                 <div class="text-sm font-semibold text-gray-800 truncate">${escapeHtml(f.roadSegment)}</div>
                                 <div class="text-xs text-gray-500 truncate mt-0.5">${escapeHtml(summary)}</div>
