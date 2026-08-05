@@ -931,7 +931,7 @@
                         color: stale ? '#e5e7eb' : 'white', 
                         weight: stale ? 1 : 2, 
                         fillColor: stale ? getStaleColor(f.status) : getStatusColor(f.status), 
-                        fillOpacity: stale ? 0.4 : 0.75,
+                        fillOpacity: stale ? 0.65 : 0.75,
                         dashArray: stale ? '4 4' : null
                     },
                                 onEachFeature: (feature, lyr) => {
@@ -948,7 +948,7 @@
                     color: stale ? '#e5e7eb' : 'white',
                     weight: stale ? 1 : 2,
                     fillColor: stale ? getStaleColor(f.status) : getStatusColor(f.status),
-                    fillOpacity: stale ? 0.4 : 0.9
+                    fillOpacity: stale ? 0.65 : 0.9
                 });
                         marker.on('click', () => selectBay(f));
                         parkingLayer.addLayer(marker);
@@ -960,7 +960,7 @@
                 const label = L.marker(f.centroid, {
                     icon: L.divIcon({
                         className: 'bay-label-container',
-                        html: '<div class="bay-label' + (stale ? ' stale' : '') + '" style="background-color:' + (stale ? getStaleColor(f.status) : getStatusColor(f.status)) + (stale ? '; opacity: 0.6' : '') + '">' + escapeHtml(activeCode) + '</div>',
+                        html: '<div class="bay-label' + (stale ? ' stale' : '') + '" style="background-color:' + (stale ? getStaleColor(f.status) : getStatusColor(f.status)) + (stale ? '; opacity: 0.8' : '') + '">' + escapeHtml(activeCode) + '</div>',
                         iconSize: [36, 18],
                         iconAnchor: [18, 9]
                     }),
@@ -976,7 +976,7 @@
                 color: stale ? '#e5e7eb' : 'white',
                 weight: stale ? 1 : 2,
                 fillColor: stale ? getStaleColor(f.status) : getStatusColor(f.status),
-                fillOpacity: stale ? 0.4 : 0.9
+                fillOpacity: stale ? 0.65 : 0.9
             });
                     marker.on('click', () => selectBay(f));
                     parkingLayer.addLayer(marker);
