@@ -52,6 +52,10 @@
     pointer-events: none;
     transform: translateY(-2px);
 }
+.bay-label.stale {
+    border-style: dashed;
+    border-color: rgba(255,255,255,0.7);
+}
         
         #loading-overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -869,6 +873,18 @@
             return '#9ca3af';
         }
 
+        function getStaleColor(status) {
+            if (status === 'free') return '#6ee7b7';
+            if (status === 'occupied') return '#fca5a5';
+            return '#d1d5db';
+        }
+
+        function isStaleData(f) {
+            if (!f.status_timestamp) return false;
+            const ageMs = Date.now() - new Date(f.status_timestamp).getTime();
+            return ageMs > 6 * 60 * 60 * 1000;
+        }
+
         function render() {
             parkingLayer.clearLayers();
             if (!allFeatures || allFeatures.length === 0) { updateVisibleCount(0); return; }
@@ -909,12 +925,14 @@
                     // Render Polygon if available
                     if (f.geometry && f.geometry.type !== 'Point') {
                         try {
+                            const stale = isStaleData(f);
                             const geoJsonLayer = L.geoJSON(f.geometry, {
                     style: { 
-                        color: 'white', 
-                        weight: 2, 
-                        fillColor: getStatusColor(f.status), 
-                        fillOpacity: 0.75 
+                        color: stale ? '#e5e7eb' : 'white', 
+                        weight: stale ? 1 : 2, 
+                        fillColor: stale ? getStaleColor(f.status) : getStatusColor(f.status), 
+                        fillOpacity: stale ? 0.4 : 0.75,
+                        dashArray: stale ? '4 4' : null
                     },
                                 onEachFeature: (feature, lyr) => {
                                     lyr.on('click', () => selectBay(f));
@@ -924,12 +942,13 @@
                         } catch(e) { console.warn('GeoJSON render fallback:', e.message); }
                     } else {
                         // Fallback to circle marker if no polygon
+                        const stale = isStaleData(f);
                 const marker = L.circleMarker(L.latLng(f.centroid), {
-                    radius: 10,
-                    color: 'white',
-                    weight: 2,
-                    fillColor: getStatusColor(f.status),
-                    fillOpacity: 0.9
+                    radius: stale ? 8 : 10,
+                    color: stale ? '#e5e7eb' : 'white',
+                    weight: stale ? 1 : 2,
+                    fillColor: stale ? getStaleColor(f.status) : getStatusColor(f.status),
+                    fillOpacity: stale ? 0.4 : 0.9
                 });
                         marker.on('click', () => selectBay(f));
                         parkingLayer.addLayer(marker);
@@ -937,10 +956,11 @@
                     
                     // Render Text Label (Code Pill)
                     if (f.centroid) {
+                        const stale = isStaleData(f);
                 const label = L.marker(f.centroid, {
                     icon: L.divIcon({
                         className: 'bay-label-container',
-                        html: '<div class="bay-label" style="background-color:' + getStatusColor(f.status) + '">' + escapeHtml(activeCode) + '</div>',
+                        html: '<div class="bay-label' + (stale ? ' stale' : '') + '" style="background-color:' + (stale ? getStaleColor(f.status) : getStatusColor(f.status)) + (stale ? '; opacity: 0.6' : '') + '">' + escapeHtml(activeCode) + '</div>',
                         iconSize: [36, 18],
                         iconAnchor: [18, 9]
                     }),
@@ -950,12 +970,13 @@
                     }
                 } else {
                     // Zoomed out: Render simple dots (highly performant)
+                    const stale = isStaleData(f);
             const marker = L.circleMarker(L.latLng(f.centroid), {
-                radius: 6,
-                color: 'white',
-                weight: 2,
-                fillColor: getStatusColor(f.status),
-                fillOpacity: 0.9
+                radius: stale ? 5 : 6,
+                color: stale ? '#e5e7eb' : 'white',
+                weight: stale ? 1 : 2,
+                fillColor: stale ? getStaleColor(f.status) : getStatusColor(f.status),
+                fillOpacity: stale ? 0.4 : 0.9
             });
                     marker.on('click', () => selectBay(f));
                     parkingLayer.addLayer(marker);
