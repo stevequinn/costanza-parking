@@ -106,6 +106,99 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Staleness Badge */
+        #staleness-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 8px;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        #staleness-badge .dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        #staleness-badge.fresh { background: #ecfdf5; color: #059669; }
+        #staleness-badge.fresh .dot { background: #10b981; }
+        #staleness-badge.stale { background: #fffbeb; color: #d97706; }
+        #staleness-badge.stale .dot { background: #f59e0b; animation: pulse-dot 1.5s infinite; }
+        #staleness-badge.old { background: #fef2f2; color: #dc2626; }
+        #staleness-badge.old .dot { background: #ef4444; animation: pulse-dot 1s infinite; }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Error Banner */
+        #error-banner {
+            position: absolute;
+            top: 70px;
+            left: 16px; right: 16px;
+            z-index: 1002;
+            max-width: 28rem;
+            margin: 0 auto;
+            border-radius: 14px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            transform: translateY(-10px);
+            opacity: 0;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+        #error-banner.visible {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #error-banner.error-state {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        #error-banner.warn-state {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #92400e;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        #error-banner .retry-btn {
+            margin-left: auto;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            flex-shrink: 0;
+        }
+        #error-banner.error-state .retry-btn { background: #dc2626; color: white; }
+        #error-banner.warn-state .retry-btn { background: #d97706; color: white; }
+        #error-banner .dismiss-btn {
+            padding: 4px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            opacity: 0.6;
+            flex-shrink: 0;
+        }
+        #error-banner .dismiss-btn:hover { opacity: 1; }
+
+        /* Search keyboard nav */
+        .search-result-active { background-color: #f3f4f6 !important; }
+
+        /* Bottom sheet drag */
+        #bottom-sheet.dragging { transition: none !important; }
     </style>
 </head>
 <body>
@@ -122,13 +215,23 @@
     <div class="absolute top-0 left-0 right-0 z-[1001] p-4 pt-[calc(1rem+env(safe-area-inset-top))] pointer-events-none">
         <div class="max-w-md mx-auto flex space-x-2 pointer-events-auto">
             <div class="relative flex-1">
-                <input id="search-input" type="text" placeholder="Search address in Melbourne..." class="w-full px-5 py-3 rounded-full glass border-none focus:ring-2 focus:ring-blue-500 outline-none text-sm shadow-sm">
-                <div id="search-results" class="absolute mt-2 w-full bg-white rounded-2xl shadow-xl border border-gray-100 hidden max-h-60 overflow-y-auto"></div>
+                <input id="search-input" type="text" placeholder="Search address in Melbourne..." role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="search-results" class="w-full px-5 py-3 rounded-full glass border-none focus:ring-2 focus:ring-blue-500 outline-none text-sm shadow-sm">
+                <div id="search-results" role="listbox" aria-label="Search results" class="absolute mt-2 w-full bg-white rounded-2xl shadow-xl border border-gray-100 hidden max-h-60 overflow-y-auto"></div>
             </div>
             <button id="btn-locate" class="w-12 h-12 flex items-center justify-center rounded-full glass text-gray-700 active:scale-95 transition shadow-sm">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             </button>
         </div>
+    </div>
+
+    <!-- Error Banner -->
+    <div id="error-banner" class="glass">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+        <span id="error-message"></span>
+        <button id="error-retry" class="retry-btn" style="display:none">Retry</button>
+        <button id="error-dismiss" class="dismiss-btn" onclick="hideError()">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
     </div>
 
     <!-- Bottom Sheet -->
@@ -141,7 +244,10 @@
         <div id="view-overview" class="sheet-content px-5">
             <div class="flex items-center justify-between mb-3 mt-1">
                 <h1 class="text-lg font-bold text-gray-800 tracking-tight">Melbourne Parking</h1>
-                <div id="status-text" class="text-xs text-gray-500 font-medium"></div>
+                <div id="staleness-badge" class="fresh" style="visibility:hidden">
+                    <span class="dot"></span>
+                    <span id="staleness-text">Updated just now</span>
+                </div>
             </div>
             
             <div class="flex space-x-2 mb-3">
@@ -164,8 +270,8 @@
                     <div class="text-[10px] text-red-500 uppercase tracking-wider">Taken</div>
                 </div>
                 <div class="bg-blue-50 rounded-xl p-2 border border-blue-100">
-                    <div id="stat-near" class="text-xl font-bold text-blue-600">0</div>
-                    <div class="text-[10px] text-blue-500 uppercase tracking-wider">Near</div>
+                    <div id="stat-visible" class="text-xl font-bold text-blue-600">0</div>
+                    <div class="text-[10px] text-blue-500 uppercase tracking-wider">Visible</div>
                 </div>
             </div>
 
@@ -517,24 +623,86 @@
         let focusPoint = null;
         let activeBay = null;
         let renderScheduled = false;
+        let lastFetchTimestamp = null;
+        let visibleCount = 0;
+        let isReloading = false;
+
+        // --- Staleness Badge ---
+        function updateStalenessBadge() {
+            const badge = document.getElementById('staleness-badge');
+            const text = document.getElementById('staleness-text');
+            if (!lastFetchTimestamp) { badge.style.visibility = 'hidden'; return; }
+            badge.style.visibility = 'visible';
+            const mins = Math.floor((Date.now() - lastFetchTimestamp) / 60000);
+            if (mins < 1) {
+                badge.className = 'fresh';
+                text.textContent = 'Updated just now';
+            } else if (mins < 5) {
+                badge.className = 'fresh';
+                text.textContent = 'Updated ' + mins + 'm ago';
+            } else if (mins < 15) {
+                badge.className = 'stale';
+                text.textContent = mins + 'm old — tap reload';
+            } else {
+                badge.className = 'old';
+                text.textContent = mins + 'm old — reload advised';
+            }
+        }
+        setInterval(updateStalenessBadge, 30000);
+
+        // --- Error Banner ---
+        let errorDismissTimer = null;
+        function showError(message, retryCallback, type) {
+            type = type || 'error';
+            const banner = document.getElementById('error-banner');
+            const msgEl = document.getElementById('error-message');
+            const retryBtn = document.getElementById('error-retry');
+            banner.className = 'glass ' + type + '-state';
+            msgEl.textContent = message;
+            if (retryCallback) {
+                retryBtn.style.display = 'inline-block';
+                retryBtn.onclick = () => { hideError(); retryCallback(); };
+            } else {
+                retryBtn.style.display = 'none';
+            }
+            requestAnimationFrame(() => banner.classList.add('visible'));
+            clearTimeout(errorDismissTimer);
+            if (!retryCallback) errorDismissTimer = setTimeout(hideError, 8000);
+        }
+        function hideError() {
+            clearTimeout(errorDismissTimer);
+            const banner = document.getElementById('error-banner');
+            banner.classList.remove('visible');
+        }
+
+        // --- Visible Count ---
+        function updateVisibleCount(count) {
+            visibleCount = count;
+            document.getElementById('stat-visible').innerText = count;
+        }
 
         // --- Worker Message Handling ---
         worker.onmessage = async (e) => {
             const { type, ...payload } = e.data;
             if (type === 'status') {
                 document.getElementById('loading-text').innerText = payload.text;
-                document.getElementById('status-text').innerText = payload.text;
             } else if (type === 'cache') {
                 await setCached(payload.key, payload.data);
             } else if (type === 'data') {
                 allFeatures = payload.features;
+                lastFetchTimestamp = Date.now();
+                isReloading = false;
+                document.getElementById('btn-reload').disabled = false;
+                updateStalenessBadge();
+                hideError();
                 document.getElementById('loading-overlay').style.opacity = '0';
                 setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 300);
                 updateStats();
                 scheduleRender();
             } else if (type === 'error') {
-                document.getElementById('status-text').innerText = 'Error: ' + payload.message;
-                document.getElementById('loading-text').innerText = 'Error: ' + payload.message;
+                isReloading = false;
+                document.getElementById('btn-reload').disabled = false;
+                showError(payload.message, () => worker.postMessage({ type: 'reload-sensors' }));
             }
         };
 
@@ -565,7 +733,7 @@
 
         function render() {
             parkingLayer.clearLayers();
-            if (!allFeatures || allFeatures.length === 0) return;
+            if (!allFeatures || allFeatures.length === 0) { updateVisibleCount(0); return; }
             
             const mapBounds = map.getBounds();
             let inBounds = [];
@@ -575,17 +743,20 @@
             }
             
             // Performance limit to prevent browser lag when zoomed out
-            if (inBounds.length > 1000) {
+            const markerLimit = 5000;
+            if (inBounds.length > markerLimit) {
                 const center = map.getCenter();
                 inBounds.sort((a, b) => center.distanceTo(L.latLng(a.centroid)) - center.distanceTo(L.latLng(b.centroid)));
-                inBounds = inBounds.slice(0, 1000);
+                inBounds = inBounds.slice(0, markerLimit);
             }
 
+            let filteredCount = 0;
             const melbTime = getMelbourneTimeData();
-            const showPolygons = map.getZoom() >= 17;
+            const showPolygons = map.getZoom() >= 19;
             
             for (let f of inBounds) {
                 if (currentFilter !== 'all' && f.status !== currentFilter) continue;
+                filteredCount++;
                 
                 // Determine active code for label
                 let activeCode = 'P';
@@ -652,6 +823,7 @@
                     parkingLayer.addLayer(marker);
                 }
             }
+            updateVisibleCount(filteredCount);
         }
 
         function selectBay(f) {
@@ -774,6 +946,7 @@
             document.getElementById('stat-free').innerText = free;
             document.getElementById('stat-occupied').innerText = occupied;
             updateNearbyList();
+            updateStalenessBadge();
         }
 
         function updateNearbyList() {
@@ -783,7 +956,6 @@
             
             if (!focusPoint) {
                 panel.classList.add('hidden');
-                document.getElementById('stat-near').innerText = '0';
                 return;
             }
             
@@ -791,8 +963,6 @@
             const nearby = allFeatures.filter(f => f.centroid && map.distance(focusPoint, L.latLng(f.centroid)) <= 600)
                 .map(f => ({ ...f, dist: map.distance(focusPoint, L.latLng(f.centroid)) }))
                 .sort((a, b) => a.dist - b.dist);
-                
-            document.getElementById('stat-near').innerText = nearby.length;
             
             if (nearby.length === 0) {
                 list.innerHTML = '<div class="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-xl">No bays found within 600m</div>';
@@ -842,14 +1012,16 @@
         });
 
         document.getElementById('btn-reload').addEventListener('click', () => {
-            document.getElementById('status-text').innerText = 'Reloading...';
+            if (isReloading) return;
+            isReloading = true;
+            document.getElementById('btn-reload').disabled = true;
             worker.postMessage({ type: 'reload-sensors' });
         });
 
         document.getElementById('btn-locate').addEventListener('click', () => {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(pos => setFocusPoint(pos.coords.latitude, pos.coords.longitude), err => {
-                    document.getElementById('status-text').innerText = 'Geolocation denied';
+                    showError('Location access denied. Search for an address instead.', null, 'warn');
                 });
             }
         });
@@ -876,9 +1048,11 @@
             clearTimeout(searchTimeout);
             const q = e.target.value;
             if (searchAbort) searchAbort.abort();
+            activeResultIndex = -1;
             
             if (q.length < 3) {
                 document.getElementById('search-results').classList.add('hidden');
+                document.getElementById('search-input').setAttribute('aria-expanded', 'false');
                 return;
             }
             
@@ -891,15 +1065,18 @@
                     if (data.length === 0) {
                         resultsDiv.innerHTML = '<div class="p-4 text-sm text-gray-500 text-center">No results found</div>';
                     } else {
-                        resultsDiv.innerHTML = data.map(r => `<div class="p-3 hover:bg-gray-50 cursor-pointer text-sm border-b border-gray-50 last:border-0 truncate" data-lat="${r.lat}" data-lon="${r.lon}">${escapeHtml(r.display_name)}</div>`).join('');
+                        resultsDiv.innerHTML = data.map((r, i) => `<div role="option" class="p-3 hover:bg-gray-50 cursor-pointer text-sm border-b border-gray-50 last:border-0 truncate" data-lat="${r.lat}" data-lon="${r.lon}">${escapeHtml(r.display_name)}</div>`).join('');
                     }
                     resultsDiv.classList.remove('hidden');
+                    document.getElementById('search-input').setAttribute('aria-expanded', 'true');
                     resultsDiv.querySelectorAll('div[data-lat]').forEach(el => {
                         el.addEventListener('click', () => {
                             setFocusPoint(parseFloat(el.dataset.lat), parseFloat(el.dataset.lon));
                             resultsDiv.classList.add('hidden');
+                            document.getElementById('search-input').setAttribute('aria-expanded', 'false');
                             document.getElementById('search-input').value = '';
                             document.getElementById('search-input').blur();
+                            activeResultIndex = -1;
                         });
                     });
                 } catch (e) { if (e.name !== 'AbortError') console.error(e); }
@@ -909,6 +1086,111 @@
         document.addEventListener('click', (e) => {
             if (!e.target.closest('#search-input') && !e.target.closest('#search-results')) {
                 document.getElementById('search-results').classList.add('hidden');
+                document.getElementById('search-input').setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // --- Keyboard Navigation for Search ---
+        let activeResultIndex = -1;
+        function updateSearchHighlight() {
+            const results = document.getElementById('search-results');
+            const items = results.querySelectorAll('div[data-lat]');
+            items.forEach((el, i) => {
+                el.classList.toggle('search-result-active', i === activeResultIndex);
+                if (i === activeResultIndex) el.id = 'search-result-' + i;
+                else el.removeAttribute('id');
+            });
+            if (activeResultIndex >= 0 && items[activeResultIndex]) {
+                document.getElementById('search-input').setAttribute('aria-activedescendant', 'search-result-' + activeResultIndex);
+                items[activeResultIndex].scrollIntoView({ block: 'nearest' });
+            } else {
+                document.getElementById('search-input').removeAttribute('aria-activedescendant');
+            }
+        }
+
+        document.getElementById('search-input').addEventListener('keydown', (e) => {
+            const results = document.getElementById('search-results');
+            const items = results.querySelectorAll('div[data-lat]');
+            if (results.classList.contains('hidden') || items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeResultIndex = Math.min(activeResultIndex + 1, items.length - 1);
+                updateSearchHighlight();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeResultIndex = Math.max(activeResultIndex - 1, 0);
+                updateSearchHighlight();
+            } else if (e.key === 'Enter' && activeResultIndex >= 0) {
+                e.preventDefault();
+                items[activeResultIndex].click();
+            } else if (e.key === 'Escape') {
+                results.classList.add('hidden');
+                document.getElementById('search-input').setAttribute('aria-expanded', 'false');
+                activeResultIndex = -1;
+            }
+        });
+
+        // Reset highlight when results change
+        const origSearchInput = document.getElementById('search-input');
+        const searchObserver = new MutationObserver(() => { activeResultIndex = -1; });
+        searchObserver.observe(document.getElementById('search-results'), { attributes: true, attributeFilter: ['class'] });
+
+        // --- Bottom Sheet Swipe Gesture ---
+        let sheetTouchStartY = 0;
+        let sheetTouchStartTime = 0;
+        let sheetDragging = false;
+        let sheetStartTransform = 0;
+
+        sheet.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.sheet-content') && e.target.closest('.sheet-content').scrollHeight > e.target.closest('.sheet-content').clientHeight) return;
+            sheetTouchStartY = e.touches[0].clientY;
+            sheetTouchStartTime = Date.now();
+            sheetDragging = false;
+            const transform = window.getComputedStyle(sheet).transform;
+            const matrix = new DOMMatrixReadOnly(transform);
+            sheetStartTransform = matrix.m42;
+        }, { passive: true });
+
+        sheet.addEventListener('touchmove', (e) => {
+            const deltaY = e.touches[0].clientY - sheetTouchStartY;
+            if (!sheetDragging && Math.abs(deltaY) > 8) {
+                sheetDragging = true;
+                sheet.classList.add('dragging');
+            }
+            if (!sheetDragging) return;
+            const sheetHeight = sheet.offsetHeight;
+            const maxTranslate = 0;
+            const minTranslate = sheetHeight - 110;
+            const newTranslate = Math.max(minTranslate, Math.min(maxTranslate, sheetStartTransform + deltaY));
+            sheet.style.transform = 'translateY(' + newTranslate + 'px)';
+        }, { passive: true });
+
+        sheet.addEventListener('touchend', (e) => {
+            if (!sheetDragging) return;
+            sheetDragging = false;
+            sheet.classList.remove('dragging');
+            const deltaY = (e.changedTouches[0].clientY) - sheetTouchStartY;
+            const elapsed = Date.now() - sheetTouchStartTime;
+            const velocity = Math.abs(deltaY) / elapsed;
+            const sheetHeight = sheet.offsetHeight;
+            const currentTranslate = sheetStartTransform + deltaY;
+            const midpoint = sheetHeight / 2 - 55;
+
+            if (velocity > 0.3 || (deltaY > 0 && currentTranslate > midpoint)) {
+                sheet.classList.replace('expanded', 'collapsed');
+                sheet.style.transform = '';
+            } else {
+                sheet.classList.replace('collapsed', 'expanded');
+                sheet.style.transform = '';
+            }
+        }, { passive: true });
+
+        // Update ARIA on search focus
+        document.getElementById('search-input').addEventListener('focus', () => {
+            const results = document.getElementById('search-results');
+            if (!results.classList.contains('hidden')) {
+                document.getElementById('search-input').setAttribute('aria-expanded', 'true');
             }
         });
 
