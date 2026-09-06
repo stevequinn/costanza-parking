@@ -4,6 +4,14 @@ Melbourne Street Parking
 
 > *"I've become physically attracted to the parking sensor."*
 
+[https://kelso.dotdoing.com/p/parking](https://kelso.dotdoing.com/p/parking)
+
+## Tech
+
+All done in a single HTML file for fun and no profit. 
+
+The APIs used have data that is pretty meh. A lot of the sensor data is stale. This is reflected in app with warnings and opaque map markers.
+
 ## Featuers
 
 <table>
@@ -34,10 +42,3 @@ Melbourne Street Parking
     </td>
   </tr>
 </table>
-
-
-## Tech
-
-All done in a single HTML file for fun and no profit. 
-
-The APIs used have data that is pretty meh. A lot of the sensor data is stale. This is reflected in app with warnings and opaque map markers.
